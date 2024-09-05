@@ -1,6 +1,14 @@
-[gd_scene load_steps=2 format=3 uid="uid://cbe7pjlb5by3h"]
+[gd_scene load_steps=5 format=3 uid="uid://cbe7pjlb5by3h"]
 
 [ext_resource type="Script" path="res://res/ui/editor_file_panel.gd" id="1_7h1cs"]
+[ext_resource type="CodeHighlighter" uid="uid://dycssjw6ca664" path="res://res/resource/code_highlighter_c.tres" id="2_37fj7"]
+
+[sub_resource type="SystemFont" id="SystemFont_bo6mj"]
+font_names = PackedStringArray("Courier New")
+
+[sub_resource type="SystemFont" id="SystemFont_nwxbh"]
+fallbacks = Array[Font]([SubResource("SystemFont_bo6mj")])
+font_names = PackedStringArray("Monospace")
 
 [node name="new_file" type="Control"]
 layout_mode = 3
@@ -19,3 +27,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/line_spacing = 2
+theme_override_fonts/font = SubResource("SystemFont_nwxbh")
+theme_override_font_sizes/font_size = 14
+syntax_highlighter = ExtResource("2_37fj7")
