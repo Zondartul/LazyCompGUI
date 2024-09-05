@@ -1,0 +1,57 @@
+// abstract interface for input-output character streams
+
+class ifx_iostream /// input-output stream interface
+	void *impl = 0; // used by implementations to store state
+	int EOF = -1;
+	/// int impl::putch(char C) // returns the character if succesful, else returns 0
+	int *putch = 0; // void putch(void* impl, char C);
+	/// int impl::getch() // returns the next character in the stream or EOF
+	int *getch = 0;
+	/// int impl::hasch() // returns 1 if there is a character to read
+	int *hasch = 0;
+end
+
+class ifx_iostream std_in;
+class ifx_iostream std_out;
+
+int fputch(class ifx_iostream f, char C)
+	if(f.putch)
+		return f.putch(f.impl, C);
+	else
+		error("iostream error: putch not set");
+	end
+end
+
+int putch(char C) return fputch(std_out, C); end
+
+int fgetch(class ifx_iostream f)
+	if(f.getch)
+		return f.getch(f.impl);
+	else
+		error("iostream error: getch not set");
+	end
+end
+
+int getch() return fgetch(std_in); end
+
+int fhasch(class ifx_iostream f)
+	if(f.hasch)
+		return f.hasch(f.impl);
+	else
+		error("iostream error: hasch not set");
+	end	
+end
+
+int hasch() return fhasch(std_in); end
+
+int fputs(class ifx_iostream f, char *str)
+	int printed = 0;
+	while(*str)
+		if(fputch(f, *str++) != 0) 
+		printed++;
+		end
+	end
+	return printed;
+end
+
+int puts(char *str) return fputs(std_out, str); end

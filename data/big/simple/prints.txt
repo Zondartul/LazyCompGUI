@@ -1,0 +1,124 @@
+#include "data_in/big/simple/consolescreen.txt"
+#include "data_in/big/number.txt"
+
+int screen_print_x_min = 0;
+int screen_print_y_min = 0;
+int screen_print_x_max = 30;
+int screen_print_y_max = 19;
+
+int cs_last_x = 29;
+int cs_last_y = 17;
+int printScrX = 0;
+int printScrY = 0;
+
+void libprints_init()
+	cs_last_x = 29;
+	cs_last_y = 17;
+	printScrX = 0;
+	printScrY = 0;
+end
+
+void setPrintCursor(int x, int y) printScrX = x; printScrY = y; end
+
+
+//idea: functor as 'character inserter'. can check bounds, do /dev/null, etc.
+//so basically stream?
+int charcode_NL = 10; //same as enter
+int charcode_BACK = 13; //same as backspace
+int charcode_CR = 14; //same as backspace -> go to prev char or end of prev line
+int charcode_FILL = 15; //means "fill the line" (and stop at the last char)
+int charcode_BELL = 16; //make a beep or something
+//sequences: 
+//NL -> print pointer is at the beginning of the next line
+//FILL -> line filled with spaces; print pointer at the end of this line
+//CR -> print pointer at the beginning of this line
+//CR FILL CR -> the line is blank and you are at the beginning
+//BACK CR -> go to beginning of prev line
+//hello BACK z -> hellz
+
+
+
+
+void PrintChar(char C, int col)
+	//dbgprint("printchar ", C, C);
+	if(C == charcode_NL) newline(); end
+	if(C == charcode_BACK) prevcol(); end
+	if(C == charcode_CR) printScrX = 0; end
+	if(C == charcode_FILL)
+		for(int i = printScrX; i < cs_last_x; i++)
+			printCharXY(i, printScrY, ' ', col);
+		end
+		printScrX = cs_last_x;
+	end
+	if(C == charcode_BELL) beep(); end
+	if(C > 31)
+		printCharXY(printScrX, printScrY, C, col);
+		newcol();
+	end
+end
+
+
+void Prints(char *str2, int col) //maybe str conflicts with the str in print?
+	while(*str2)
+		PrintChar(*str2++, col);
+	end
+end
+
+void Printn(int num, int col)
+	char buff[20];
+	int2str(num, (char*)&buff);
+	Prints((char*)&buff, col);
+end
+
+void newline()
+	printScrX = 0;
+	printScrY++;
+	if(printScrY > cs_last_y-1)
+		ConsoleShiftUp();
+	end
+end
+
+void prevline()
+	printScrX = cs_last_x;
+	printScrY--;
+	if(printScrY < 0)
+		ConsoleShiftDown();
+	end
+end
+
+void newcol()
+	printScrX++;
+	if(printScrX > cs_last_x)
+		newline();
+	end
+end
+
+void prevcol()
+	printScrX--;
+	if(printScrX < 0)
+		prevline();
+	end
+end
+
+void beep() end
+
+void ConsoleShiftUp()
+	if(printScrY > cs_last_y-1)
+		screen_shift_vertical(1);
+		printScrY--;
+	end
+end
+
+void ConsoleShiftDown()
+	if(printScrY < 0)
+		screen_shift_vertical(-1);
+		printScrY++;
+	end
+end
+
+void screen_set_print_box(int x1, int y1, int x2, int y2)
+	screen_print_x_min = x1;
+	screen_print_y_min = y1;
+	screen_print_x_max = x2;
+	screen_print_y_max = y2;
+end

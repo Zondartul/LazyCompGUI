@@ -1,0 +1,94 @@
+//hello, am printf
+#include "data_in/big/simple/prints.txt"
+
+char *lorem_ipsum(int I)
+   int sw = I % 10;
+   if(sw == 0) return "Lorem ipsum dolor sit amet, "; end
+   if(sw == 1) return "consectetur adipiscing elit. "; end
+   if(sw == 2) return "Nam auctor lorem in massa tempor bibendum. "; end
+   if(sw == 3) return "Nulla in metus in nunc ornare "; end
+   if(sw == 4) return "porta ullamcorper non enim. "; end
+   if(sw == 5) return "Donec tincidunt magna "; end
+   if(sw == 6) return "non tellus blandit faucibus. "; end
+   if(sw == 7) return "Nullam ac sem vitae lectus gravida vulputate. "; end
+   if(sw == 8) return "Quisque quis lacinia risus, "; end
+   if(sw == 9) return "non rutrum turpis. "; end
+   return "(oops)";
+end
+
+void debug_s_arg(char *arg)
+	printf("{s %d}:[",arg);
+	while(*arg)
+		printf("%c",*arg++);	
+	end
+	printf("]");
+end
+
+int sprintf(char *buff, char *fmt, void *parg)
+	int printed = 0;
+	while(*fmt)
+		char c = *fmt;
+		if(c == '%')
+			fmt++;
+			char c2 = *fmt;
+			fmt++;
+			if(c2 == 'd') int2str(*(int*)parg, buff); parg++; end
+			if(c2 == 'f') float2str(*(float*)parg, 4, buff); parg++; end
+			if(c2 == 's') /*debug_s_arg(*parg);*/ strmove(buff, *(char**)parg); parg++; end
+			if(c2 == 'c') buff[0] = *(char*)parg; parg++; buff[1] = 0; end
+			if(c2 == '%') buff[0] = '%'; buff[1] = 0; end
+			int inc = strlen(buff);
+			printed = printed + inc;
+			buff = buff + inc;
+		end
+		if(c != '%')
+			if(c == '\')
+				fmt++;
+				char c2 = *fmt;
+				fmt++;
+				if(c2 == 'n') buff[0] = charcode_NL; buff[1] = 0; end
+				if(c2 == 'r') buff[0] = charcode_CR; buff[1] = 0; end
+				if(c2 == 'f') buff[0] = charcode_FILL; buff[1] = 0; end
+				if(c2 == 'b') buff[0] = charcode_BACK; buff[1] = 0; end
+				if(c2 == 'e') buff[0] = charcode_BELL; buff[1] = 0; end
+				if(c2 == '\') buff[0] = '\'; buff[1] = 0; end
+				int inc = strlen(buff);
+				printed = printed + inc;
+				buff = buff+inc;
+			end
+			if(c != '\')
+				buff[0] = c;
+				buff[1] = 0;
+				printed++;
+				buff++;
+				fmt++;
+			end
+		end
+	end
+	return printed;
+end
+
+int printf(char *fmt, varargs)
+	int printed = 0;
+	char buff[80];
+	void *parg = (void*)&fmt; 
+	parg++;
+	printed = sprintf(&buff, fmt, parg);
+	Prints(&buff, 999);
+	return printed;
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

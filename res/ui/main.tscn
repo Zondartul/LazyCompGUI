@@ -1,0 +1,106 @@
+[gd_scene load_steps=2 format=3 uid="uid://d1khpturliecs"]
+
+[ext_resource type="Script" path="res://res/ui/editor.gd" id="1_1wr4k"]
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TabContainer" type="TabContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+current_tab = 0
+
+[node name="Editor" type="Control" parent="TabContainer"]
+layout_mode = 2
+script = ExtResource("1_1wr4k")
+metadata/_tab_index = 0
+
+[node name="V" type="VBoxContainer" parent="TabContainer/Editor"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MenuBar" type="MenuBar" parent="TabContainer/Editor/V"]
+layout_mode = 2
+
+[node name="File" type="PopupMenu" parent="TabContainer/Editor/V/MenuBar"]
+item_count = 4
+item_0/text = "New"
+item_1/text = "Open..."
+item_1/id = 1
+item_2/text = "Save"
+item_2/id = 2
+item_3/text = "Save As..."
+item_3/id = 3
+
+[node name="tabs" type="TabContainer" parent="TabContainer/Editor/V"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="fd_open_file" type="FileDialog" parent="TabContainer/Editor"]
+title = "Open a File"
+initial_position = 2
+size = Vector2i(500, 400)
+ok_button_text = "Open"
+file_mode = 0
+
+[node name="fd_save_file" type="FileDialog" parent="TabContainer/Editor"]
+auto_translate_mode = 1
+initial_position = 2
+size = Vector2i(500, 400)
+ok_button_text = "Save"
+
+[node name="Preproc" type="Control" parent="TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="Tokenize" type="Control" parent="TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 2
+
+[node name="Parse (AST)" type="Control" parent="TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 3
+
+[node name="Semantic" type="Control" parent="TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 4
+
+[node name="IR" type="Control" parent="TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 5
+
+[node name="Codegen" type="Control" parent="TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 6
+
+[node name="Asm" type="Control" parent="TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 7
+
+[node name="Exec" type="Control" parent="TabContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 8
+
+[connection signal="index_pressed" from="TabContainer/Editor/V/MenuBar/File" to="TabContainer/Editor" method="_on_file_index_pressed"]
+[connection signal="file_selected" from="TabContainer/Editor/fd_open_file" to="TabContainer/Editor" method="_on_fd_open_file_file_selected"]

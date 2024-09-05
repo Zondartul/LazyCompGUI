@@ -1,0 +1,103 @@
+#include "data_in/big/classy/debug_info.txt"
+
+/// userspace stack tracer
+/// prints a list of callers when there is an error
+
+
+class stack_frame
+	int *p_ebp = 0;
+
+	void constructor()
+		int *x = 0;		/// first variable in this function has addr EBP:-1
+		x = &x + 1;		/// pointer points to the cell after itself (EBP:-1:+1 == EBP)
+		p_ebp = x;		/// frame of the "set_current" function
+		p_ebp = *p_ebp; /// frame of the calling function
+	end
+
+	class stack_frame prev_frame()
+			check_stack_size();
+		class stack_frame F;
+		if(p_ebp) F.p_ebp = *p_ebp; end
+		return F;
+	end
+	
+	int get_ret_ip() 
+			check_stack_size();
+		int ip = p_ebp[1];
+		//err_printf(999, "get_ret_ip(ebp=%d):\n",(int)p_ebp);
+		//err_printf(999, "  -1: %d\n", p_ebp[-1]);
+		//err_printf(999, "   0: %d\n", p_ebp[0]);
+		//err_printf(999, "  +1: %d\n", p_ebp[ 1]);
+		//err_printf(999, "  ... ret %d\n", ip);
+		return ip;//p_ebp[-1]; 
+	end	
+end
+
+
+class T_stack_trace
+	class debug_info_func_db *func_db = 0;
+	class debug_info_var_db *var_db = 0;
+	
+	void trace()
+		class stack_frame frame;
+		int check_ebp = 0;
+		asm("mov $S[check_ebp], EBP");
+		err_printf(999, "trace:\n frame.ebp = %d\n check_ebp = %d\n", (int)frame.p_ebp, check_ebp);
+		int frame_n = 0;
+		while(frame.p_ebp)
+			check_stack_size();
+			int ip = frame.get_ret_ip();
+			if(ip == 0) infloop(); end
+			//class debug_info_func func = func_db.get_func_at_ip(ip); //fixed bug: this shouldn't be allowed due to typecheck
+			int func_id = func_db.get_func_at_ip(ip);
+			err_printf(999, ".. func_id = %d\n", func_id);
+			if(func_id != -1)
+				//class debug_info_func func = func_db.funcs[func_id];
+				err_printf(990, "1");
+				class debug_info_func *p_func = &(func_db.funcs) + func_id;
+				err_printf(990, "2");
+				class debug_info_func func = *p_func;
+				err_printf(999, "p_func = %d\n", (int)p_func);
+				err_printf(999, " &func = %d\n", (int)&func);
+				
+				err_printf(990, "3");
+				int offset = ip - func.lbl_entrance;
+				err_printf(990, "4");
+				char *name = func.ir_name;//user_name;
+				err_printf(990, "5");
+				err_printf(999, "%d:%d (%s + %d)\n", frame_n, ip, name, offset);
+				err_printf(990, "6");
+				
+				err_printf(999, "\n");
+			else
+				err_printf(999, "%d:%d (unknown)\n", frame_n, ip);
+			end
+			frame = frame.prev_frame();
+			frame_n++;
+			if(!frame.p_ebp)
+				err_printf(999, "... pause\n");
+				infloop();
+			end
+		end
+	end
+end
+
+class T_stack_trace stack_trace;
+
+
+void init_stack_trace()
+	err_printf(999, "Initializing func db\n");
+	int *p_debug_info_func = 0;
+// $S[...] means "create temporary, use it here, and later save it"
+// $R[...] means "load (read) as R-value"
+// $L[...] means "load (copy) as modifiable L-value"
+	asm( "mov $S[p_debug_info_func], debug_info_funcs" ); 
+	func_db.deserialize(p_debug_info_func);
+	stack_trace.func_db = &func_db;
+	err_printf(999, "Func db ready\n");
+end
+
+void test_stack_trace()
+	stack_trace.trace();
+end
+

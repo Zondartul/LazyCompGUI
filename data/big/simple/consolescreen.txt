@@ -1,0 +1,38 @@
+int *AdrScreen = 0;
+
+void printCharXY(int X, int Y, char C, int col)
+	int offs = 2*(X+Y*30);
+	int *P = AdrScreen + offs;
+	P[0] = C;
+	P++;
+	P[0] = col;
+end
+
+void screen_set(int scr) 
+	writePort(5, (int)scr);
+	AdrScreen = (int*)scr; 
+end
+void screen_clear() AdrScreen[2041] = 1; end
+void screen_cursor_enable() AdrScreen[2046] = 1; end
+void screen_cursor_disable() AdrScreen[2046] = 0; end
+void screen_set_cursor_pos(int pos) AdrScreen[2045] = 2*pos; end
+void screen_set_cursor_pos_xy(int x, int y) AdrScreen[2045] = 2*(30*y+x); end
+void screen_force_refresh() AdrScreen[2020] = 1; delay(1); end
+void screen_set_shift_box_x1(int n) AdrScreen[2031] = n; end
+void screen_set_shift_box_x2(int n) AdrScreen[2032] = n; end
+void screen_set_shift_box_y1(int n) AdrScreen[2033] = n; end
+void screen_set_shift_box_y2(int n) AdrScreen[2034] = n; end
+
+void screen_set_shift_box(int x1, int x2, int y1, int y2)
+	AdrScreen[2031] = x1;
+	AdrScreen[2032] = x2;
+	AdrScreen[2033] = y1;
+	AdrScreen[2034] = y2;
+end
+
+void screen_shift_vertical(int n) AdrScreen[2038] = n; end
+void screen_shift_horizontal(int n) AdrScreen[2037] = n; end
+
+
+
+//void delay(int n) end

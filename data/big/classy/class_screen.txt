@@ -1,0 +1,47 @@
+/// driver for a console screen
+class CScreen
+	int* mem_scr;
+	int x_max;
+	int y_max;
+	int col;
+
+	void constructor()
+		mem_scr = 65536;
+		x_max = 30;
+		y_max = 19;
+		col = 999;
+		//printf("CScreen constructed @ %d\n", this);
+	end
+
+ 
+	void putchXY(char C, int x, int y)
+		int adr = (x+x_max*y)*2;
+		mem_scr[adr] = C;      //this says "array access into non-pointer type char"
+		mem_scr[adr+1] = col;
+	end
+
+	void set(int scr_adr) 
+		mem_scr = (int*)scr_adr; 
+		//printf("set mem_scr to %d, new mem_scr is %d\n", scr_adr, mem_scr);
+	end
+
+	void clear() 							mem_scr[2041] = 1; 			end
+	void cursor_enable() 					mem_scr[2046] = 1; 			end
+	void cursor_disable() 					mem_scr[2046] = 0; 			end
+	void set_cursor_pos(int pos) 			mem_scr[2045] = 2*pos; 		end
+	void set_cursor_pos_xy(int x, int y) 	mem_scr[2045] = 2*(30*y+x); end
+	void force_refresh() 					mem_scr[2020] = 1; delay(1); end
+
+
+	void set_shift_box(int x1, int x2, int y1, int y2)
+		mem_scr[2031] = x1;
+		mem_scr[2032] = x2;
+		mem_scr[2033] = y1;
+		mem_scr[2034] = y2;
+	end
+
+	void shift_vertical(int n) 				mem_scr[2038] = n; 			end
+	void shift_horizontal(int n) 			mem_scr[2037] = n; 			end
+
+
+end

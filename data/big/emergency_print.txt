@@ -1,0 +1,69 @@
+void printXY(char *str, int X, int Y)
+	int *scr_adr = AdrScreen;//65536+100;
+	while(*str)
+		char C = *str++;
+		int adr = (X+30*Y)*2;
+		scr_adr[adr] = C;
+		scr_adr[adr+1] = 999;
+		X++;
+	end
+end
+
+//int numOfPrint = 0;
+int printX = 0;
+
+void print(char *str)
+	printXY(str, printX, 0);
+	printX = printX + strlen(str);
+end
+
+void printnum2(int num)
+	if(num < 0) print("(<0)"); end
+	if(num == 0) print("(0)"); end
+	if(num == 1) print("(1)"); end
+	if(num == 2) print("(2)"); end
+	if(num == 3) print("(3)"); end
+	if(num == 4) print("(4)"); end
+	if(num == 5) print("(5)"); end
+	if(num == 6) print("(6)"); end
+	if(num == 7) print("(7)"); end
+	if(num == 8) print("(8)"); end
+	if(num == 9) print("(9)"); end
+	if(num == 10) print("(10)"); end
+	if(num > 10) print("(>10)"); end
+end
+
+void fillderp(char *buff, int size, char *dz)
+	int len = strlen(dz);
+	for(int i = 0; i < size; i++)
+		buff[i] = dz[i%len];
+	end
+	buff[size-1] = 0;
+end
+
+void printnum3(int num)
+	char buff[10];
+	fillderp(buff, 10, "derp");
+	//print("<"); print(buff); print(">");
+	int2str(num, buff);
+	//print("<"); print(buff); print(">");
+	print(buff);
+end
+
+void printc(char c)
+	char arr[2];
+	arr[0] = c;
+	arr[1] = 0;
+	print(arr);
+end
+
+void printnl()
+	printX = printX+30 - (printX%30);
+end
+
+void dbgprint(char *str10, int num10, char c10)
+	print(str10);
+	printnum2(num10);
+	print("["); printc(c10); print("]");
+	printnl();
+end

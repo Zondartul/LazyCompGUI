@@ -1,0 +1,220 @@
+#include "data_in/printy.txt"
+#include "data_in/consolescreen.txt"
+#include "data_in/class_screen.txt"
+
+int infloop() 
+	int I = 0;
+	while(1)
+		writePort(7, I++);
+	end 
+end
+
+void writePort(int port, int val)
+   char* mem_port = 65536;
+   mem_port[port] = val;
+end
+
+void printXY(char *str, int X, int Y)
+	int *scr_adr = AdrScreen;//65536+100;
+	while(*str)
+		char C = *str++;
+		int adr = (X+30*Y)*2;
+		scr_adr[adr] = C;
+		scr_adr[adr+1] = 999;
+		X++;
+	end
+end
+
+//int numOfPrint = 0;
+int printX = 0;
+
+void print(char *str)
+	printXY(str, printX, 0);
+	printX = printX + strlen(str);
+end
+
+void printnum2(int num)
+	if(num < 0) print("(<0)"); end
+	if(num == 0) print("(0)"); end
+	if(num == 1) print("(1)"); end
+	if(num == 2) print("(2)"); end
+	if(num == 3) print("(3)"); end
+	if(num == 4) print("(4)"); end
+	if(num == 5) print("(5)"); end
+	if(num == 6) print("(6)"); end
+	if(num == 7) print("(7)"); end
+	if(num == 8) print("(8)"); end
+	if(num == 9) print("(9)"); end
+	if(num == 10) print("(10)"); end
+	if(num > 10) print("(>10)"); end
+end
+
+void fillderp(char *buff, int size, char *dz)
+	int len = strlen(dz);
+	for(int i = 0; i < size; i++)
+		buff[i] = dz[i%len];
+	end
+	buff[size-1] = 0;
+end
+
+void printnum3(int num)
+	char buff[10];
+	fillderp(buff, 10, "derp");
+	//print("<"); print(buff); print(">");
+	int2str(num, buff);
+	//print("<"); print(buff); print(">");
+	print(buff);
+end
+
+void printc(char c)
+	char arr[2];
+	arr[0] = c;
+	arr[1] = 0;
+	print(arr);
+end
+
+void printnl()
+	printX = printX+30 - (printX%30);
+end
+
+void dbgprint(char *str10, int num10, char c10)
+	print(str10);
+	printnum2(num10);
+	print("["); printc(c10); print("]");
+	printnl();
+end
+
+void delay(int n)
+	float k = 1/32;
+	for(int i = 0; i < n*k; i++)
+	end
+end
+
+void clock()
+	int i = 0;
+	while(1)
+		printnum2(i++);
+		if(i > 10) i = 0; end
+		delay(1000);
+	end
+end
+
+void iftest(int n)
+	print("iftest: if("); printnum3(n); print(" == 2): ");
+	if(n == 2)
+		print("yes.");
+	else
+		print("no.");
+	end
+	print("end."); printnl();
+end
+
+
+void iftest2(int n)
+	print("iftest2: if("); printnum3(n); print(" == 2): ");
+	if(n == 2)
+		print("yes.");
+	end
+	if(n != 2)
+		print("no.");
+	end
+	print("end."); printnl();
+end
+
+void iftest3(int n)
+	print("iftest3: if("); printnum3(n); print("): ");
+	if(n)
+		print("yes.");
+	end
+	if(n == 0)
+		print("no.");
+	end
+end
+
+void dbgstrprint(char *str2)
+	int I = 0;
+	while(*str2)
+		print("[");printc(*str2);print("]");
+		str2++;
+		I++;
+	end
+	print(", "); printnum3(I); print(" chars"); printnl();
+end
+
+void testVarArg(int x1, int x2, int x3)
+	int v1 = 4;
+	int adr1 = &x1;
+	int adr2 = &x2;
+	int adr3 = &x3;
+	int adr4 = &v1;
+	printf("x1=%d, ", x1); printf("&x1=%d, ", adr1); printf("*(&x1)=%d\n", *adr1);
+	printf("x2=%d, ", x2); printf("&x2=%d, ", adr2); printf("*(&x2)=%d\n", *adr2);
+	printf("x3=%d, ", x3); printf("&x3=%d, ", adr3); printf("*(&x3)=%d\n", *adr3);
+	printf("v1=%d, ", v1); printf("&v1=%d, ", adr4); printf("*(&v1)=%d\n", *adr4);
+end
+
+void testVarArg2(int x)
+	printf("testVarArg2 begin\n");
+	int *adr = &x;
+	for(int i = 0; i < 6; i++)
+		printf(".");
+		int val = adr[i-3];
+		printf("adr[%d] = ", i); printf("[%d] = ", adr+i); printf("%d\n", val);
+	end
+	printf("testVarArg2 end\n");
+end
+
+void testilogpow10()	
+	printf("numDigits(1234){4}=%d\n", numDigits(1234));
+	printf("ilog10(1234) {3} = %d\n", ilog10(1234));
+	printf("ilog10(10) {1}   = %d\n", ilog10(10));
+	printf("ilog10(1) {0}    = %d\n", ilog10(1));
+	printf("ilog10(0) {ER}   = %d\n", ilog10(0));
+	printf("ilog10(-1) {ER}  = %d\n", ilog10(-1));
+	printf("ilog10(-10) {ER} = %d\n", ilog10(-10));
+	printf("ipow10(2) {100}  = %d\n", ipow10(2));
+	printf("ipow10(1) {10}   = %d\n", ipow10(1));
+	printf("ipow10(0) {1}    = %d\n", ipow10(0));
+	printf("ipow10(-1) {0.1} = %d\n", ipow10(-1));
+	printf("ipow10(-2) {0.02}= %d\n", ipow10(-2));
+end
+
+int main(int argc, char **argv)
+	class Screen scr;
+    screen_set(65536+100);
+	screen_clear();
+	print ("hello world! ");
+	libconsolescreen_init();
+	print ("another hello"); printnl();
+	iftest3(1);
+	iftest3(123);
+	//iftest3(0);
+	//iftest3(-1);
+	//char* strx1 = "horse";
+	print("123 = "); printnum3(123); printnl();
+	//print("0 = "); printnum3(0); printnl();
+	screen_clear();setPrintCursor(0,0);
+	//testVarArg(1, 2, 3);
+	//testVarArg2(123, 202);
+	//print("ok.");
+	printf("test...");
+	printf("printf 1 = [%d]\n", 1);
+
+	
+	delay(3000);
+	screen_clear();setPrintCursor(0,0);
+	printf("%%d test: 0 = [%d],\n1 = [%d],\n-123 = [%d]\n", 0, 1, -123);
+	printf("%%f test: 0 = [%f],\n1 = [%f],\n0.5 = [%f],\n123.25 = [%f]\n",0,1,1/2,123+1/4);
+	printf("%%f test: 123.0012 =\n[%f]\n", 123+12/10000);
+	//setPrintCursor(0,0);
+	printf("hi%dm\nye\n",1);
+	printf("printf test1\n");
+	printf("printf [%d] %%d test2\n", 123);
+	printf("printf [%f] %%f test3\n", 21/4);
+	printf("printf [%s] %%s test4\n", "hello");
+	printf("printf [%c] %%c test5\n", '\');
+	printf("fill stuff and clear\r\f\rlol yep\n");
+	printf("rewrite\rlol ok\n");
+	infloop();
+end
+

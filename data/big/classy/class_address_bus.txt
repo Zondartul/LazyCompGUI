@@ -1,0 +1,20 @@
+/// wiremod address bus
+
+class Address_bus
+	int addr[4];
+	void constructor(int base_offset, int size1, int size2, int size3)
+		addr[0] = base_offset;
+		addr[1] = addr[0] + size1;
+		addr[2] = addr[1] + size2;
+		addr[3] = addr[2] + size3;
+	end
+	void write(int dev_num, int* offset, int byte)
+		int *ptr = addr[dev_num] + offset;
+		*ptr = byte;
+	end
+	int read(int dev_num, int* offset) /// variable was shadowed (addr)
+		int *ptr = addr[dev_num] + offset;
+		int byte = *ptr;
+		return *ptr;
+	end
+end

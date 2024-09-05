@@ -1,0 +1,82 @@
+//#include "data_in/big/unit_tests.txt"
+#include "data_in/big/error.txt"
+#include "data_in/big/testOutput.txt"
+//#include "data_in/big/simple/printf.txt"
+//#include "data_in/big/classy/class_address_bus.txt"
+//#include "data_in/big/classy/class_csprinter.txt"
+//#include "data_in/big/classy/printf_io.txt"
+//#include "data_in/big/classy/allocators/bump_allocator.txt"
+#include "data_in/big/stack_ctrl.txt"
+#include "data_in/big/classy/stack_trace.txt"
+/// NEED NOW::: usercode stack trace in case of crash with emergency print
+
+/// we probably need asm to actually give the debug info to these functions
+
+
+/// if screen doesn't scroll, try
+/// semantic_expr_op.c:492 uncomment block
+
+
+int main()
+	setup();
+	//err_printf(990, "Running unit tests...\n");
+	//run_all_tests();
+	//err_printf(90,  "All tests pass.\n");
+	
+	err_printf(999, "Hello world!\n");
+	
+	//int eoc = get_end_of_code();
+	//int stack_size = 65535 - eoc;
+
+	//writePort(0,123);
+	//set_stack(eoc, eoc+stack_size, stack_size-20, stack_size);
+	//writePort(0,456);
+	main_rest();
+end
+
+int main_rest()
+	//test_stack_overflow();
+
+	//init_stack_trace();
+	
+	//test_stack_trace();
+
+	err_printf(999, "End of program\n");
+	infloop();
+
+	//class Address_bus addr_bus(65536, 20000, 20000, 20000);
+	//class CScreen scr; scr.set(addr_bus.addr[2]);
+	//class CSPrinter printer; printer.scr = &scr;
+	//printer.init();
+	//std_out = printer.ifx;
+	//scr.clear();
+	//printf("Hello [%s] %d!\n", "world", 123456);
+	
+	/*
+	class Bump_allocator bumpalloc;
+	int heap = 30000;
+	int heap_size = 10000;
+	bumpalloc.init((void*)heap, heap_size);
+	cur_allocator = bumpalloc.ifx;	
+	printf("malloc initialized\n");
+	printf("malloc(10) p1 = %d\n", (int)malloc(10));
+	printf("malloc(20) p2 = %d\n", (int)malloc(20));
+	*/
+	infloop();
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

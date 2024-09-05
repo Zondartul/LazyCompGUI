@@ -1,0 +1,70 @@
+int strlen(char *str)
+	int i = 0;
+	while(*str++) i++; end
+	return i;
+end
+
+void string_reverse(char *str)
+	int len = strlen(str);
+	for(int i = 0; i < len/2; i++)
+		int opposite = len-1-i;
+		char d = str[i];
+		str[i] = str[opposite];
+		str[opposite] = d;
+	end	
+end
+
+void memmove(char *dest, char *src, int size)
+	if(dest > src)
+		//print(".moveback.");
+		for(int i = size-1; i > -1; i--)
+			dest[i] = src[i];
+		end
+		//for(int i = 0; i < size; i++)
+		//	dest[i] = 'w';
+		//end
+	end
+	if(dest < src)
+		//writePort(3,2);
+		for(int i = 0; i < size; i++)
+			dest[i] = src[i];
+		end
+	end
+end
+
+void strmove(char *dest, char *src)
+	int len = strlen(src);
+	memmove(dest, src, len+1); //includes terminating zero
+end
+
+void strncpy(char *dest, char *src, int n)
+	while(n--)
+		char C = *src++;
+		*dest++ = C;
+		if(C == 0) return; end
+	end
+end
+
+
+//if the string is shorter than padlen, pads in with padchar
+void strPadBegin(char *str, int padlen, char padchar)
+	int len = strlen(str);
+	if(len < padlen)
+		int diff = padlen - len;
+		strmove(str+diff, str);
+		for(int i = 0; i < diff; i++)
+			str[i] = padchar;
+		end
+	end
+end
+
+void strPadEnd(char *str, int padlen, char padchar)
+	int len = strlen(str);
+	if(len < padlen)
+		int diff = padlen - len;
+		for(int i = 0; i < diff; i++)
+			str[len+i] = padchar;
+		end
+		str[padlen] = 0;
+	end
+end

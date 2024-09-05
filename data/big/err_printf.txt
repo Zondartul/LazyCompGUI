@@ -1,0 +1,110 @@
+#include "data_in/big/number.txt"
+
+/// printf for errors in case stuff borks
+int err_snprintf(char *buff, int max_len, char *fmt, void *parg)
+	int printed = 0;
+	int stop = 0;
+	while(!stop)
+		char c = *fmt;
+		int rem = max_len - printed;
+		if(rem > 10)
+			if(c == '%')
+				fmt++;
+				char c2 = *fmt;
+				fmt++;
+				if(c2 == 'd') int2str(*(int*)parg, buff); parg++; end
+				if(c2 == 'f') float2str(*(float*)parg, 4, buff); parg++; end
+				if(c2 == 's') /*strmove*/ strncpy(buff, *(char**)parg, rem); parg++; end
+				if(c2 == 'c') buff[0] = *(char*)parg; parg++; buff[1] = 0; end
+				if(c2 == '%') buff[0] = '%'; buff[1] = 0; end
+				int inc = strlen(buff);
+				printed = printed + inc;
+				buff = buff + inc;
+			end
+			if(c != '%')
+				if(c == '\')
+					fmt++;
+					char c2 = *fmt;
+					fmt++;
+					if(c2 == 'n') buff[0] = '\n'; buff[1] = 0; end
+					if(c2 == 'r') buff[0] = '\r'; buff[1] = 0; end
+					if(c2 == 'f') buff[0] = 15; buff[1] = 0; end
+					if(c2 == 'b') buff[0] = '\b'; buff[1] = 0; end
+					if(c2 == 'e') buff[0] = '\e'; buff[1] = 0; end
+					if(c2 == '\\') buff[0] = '\\'; buff[1] = 0; end
+					int inc = strlen(buff);
+					printed = printed + inc;
+					buff = buff+inc;
+				end
+				if(c != '\\')
+					buff[0] = c;
+					buff[1] = 0;
+					printed++;
+					buff++;
+					fmt++;
+				end
+			end
+			if(!*fmt) stop = 1; end
+		else
+			stop = 1;
+		end
+	end
+	return printed;
+end
+
+int err_printf(int col, char *fmt, varargs)
+	int printed = 0;
+	char buff[80];
+	buff[79] = 0;
+	void *parg = (void*)&fmt; 
+	parg++;
+	printed = err_snprintf(&buff, 78, fmt, parg);
+	err_puts(&buff, col);
+	return printed;
+end
+
+int err_scr_I = 0;
+int err_scr_width = 30;
+			   
+void err_clear()
+	int *adr_scr = 65536+20000+20000;
+	adr_scr[2041] = 1;	
+	err_scr_I = 0;
+end
+
+void err_puts(char *str, int col)
+	int *adr_scr = 65536+20000+20000;
+	int *p = adr_scr + 2*err_scr_I;
+	while(*str)
+		char C = *str++;
+		if(C == '\n')
+			int col = err_scr_I % err_scr_width;
+			writePort(1, col);
+			int rem = err_scr_width - col;
+			writePort(2, rem);
+			err_scr_I = err_scr_I + rem;//(err_scr_width - (err_scr_I % err_scr_width));
+			while(err_scr_I > (err_scr_width * 16))
+				writePort(0, err_scr_I);
+				err_scr_I = err_scr_I - err_scr_width;
+				adr_scr[2038] = 1; // scroll the screen by 1 line
+			end
+			p = adr_scr + 2*err_scr_I;
+		else
+			*p++ = C;
+			*p++ = col;
+			err_scr_I++;
+		end
+	end
+end
+
+
+
+
+
+
+
+
+
+
+
+

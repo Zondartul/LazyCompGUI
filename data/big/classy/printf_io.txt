@@ -1,0 +1,89 @@
+//printf designed for iostreams
+#include "data_in/big/classy/ifx_iostream.txt"
+
+int charcode_FILL = 15; //means "fill the line" (and stop at the last char)
+
+int printf(char *fmt, varargs)
+	void *parg = (void*)&fmt; 
+	parg++;
+	return fprintf_v(std_out, fmt, parg);
+end
+
+int fprintf(class ifx_iostream io, char *fmt, varargs)
+	void *parg = (void*)&fmt; 
+	parg++;
+	return fprintf_v(io, fmt, parg);
+end
+
+int fprintf_v(class ifx_iostream io, char *fmt, void *parg)
+	int printed = 0;
+	while(*fmt)
+		char c = *fmt++;
+		int inc = 0;
+		if(c == '%')
+			char c2 = *fmt++;
+			if(c2 == 'd') int i   = *(int*)parg++;   inc = io_itoa(io, i); 			end
+			if(c2 == 'f') float f = *(float*)parg++; inc = io_ftoa(io, f, 4); 		end
+			if(c2 == 's') char *s = *(char**)parg++; inc = fputs(io, s); 			end
+			if(c2 == 'c') char c  = *(char*)parg++;  inc = (fputch(io, c) != 0); 	end
+			if(c2 == '%') 							 inc = (fputch(io, '%') != 0); 	end
+		else
+			if(c == '\\')
+				char c2 = *fmt++;
+				inc = (fputch(io, unescape_char(c2)) != 0);
+			else
+				inc = (fputch(io, c) != 0);
+			end
+		end
+		printed = printed + inc;
+	end
+	return printed;
+end
+
+char unescape_char(char C)
+	if (C == 'n') return '\n'; end
+	if (C == 'r') return '\r'; end
+	if (C == 'f') return charcode_FILL; end
+	if (C == 'b') return '\b'; end
+	if (C == 'e') return '\e'; end
+	if (C == '\\') return '\\'; end
+end
+			   
+char escape_char(char C)
+	if (C == '\n') return 'n'; end
+	if (C == '\r') return 'r'; end
+	if (C == charcode_FILL) return 'f'; end
+	if (C == '\b') return 'b'; end
+	if (C == '\e') return 'e'; end
+	if (C == '\\') return '\\'; end
+end
+
+
+void itoa(int num, char *str) int2str(num, str); end
+void ftoa(float num, int prec, char *str) float2str(num, prec, str); end
+int io_itoa(class ifx_iostream io, int num)
+	char buff[20];
+	itoa(num, &buff);
+	fputs(io, &buff);
+	return strlen(&buff);
+end
+
+int io_ftoa(class ifx_iostream io, float num, int prec)
+	char buff[20];
+	ftoa(num, prec, &buff);
+	fputs(io, &buff);
+	return strlen(&buff);
+end
+
+
+
+
+
+
+
+
+
+
+
+
+

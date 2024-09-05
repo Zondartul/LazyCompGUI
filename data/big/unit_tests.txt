@@ -1,0 +1,865 @@
+/// Unit test for LazyTongue 
+/// PS: because pointers are hard-coded, this should be the first include file in main.lz
+//int tests[10];
+int CODE_OK = -1;
+int TYPE_BASIC = 1;
+int TYPE_STACK = 2;
+int TYPE_GLOBAL = 3;
+int unit_test_ignore_global_address = 0;
+int unit_test_ignore_stack_address = 0;
+int unit_test_adaptive_stack = 1;
+int unit_test_stack_offset = 0;
+
+#include "data_in/big/string.txt"
+/// tests:
+/// 1 - plain arguments
+/// 2 - global vars
+/// 3 - pointer (val, &val, *val)
+/// 4 - funcptr
+/// 5 - auto unit test
+
+class test0_asc_derp
+	int m0;
+	int m1;
+	int m2;
+	int *p;
+end
+
+void test_0_associativity()
+	int x = 0;
+	int arr[5];
+	arr = {10,20,30,40,50};
+	class test0_asc_derp derp;
+	writePort(0, 0);
+	
+	/* data dump! last working version of precedence rules in YACC/BISON:
+	
+				/// HOW TO SET UP PRECEDENCE AND ASSOCIATIVITY:
+			/// a method that seems to work, 20 July 2024:
+			/// 1. use both operator tokens (e.g. '=')
+			///    and production tokens (e.g. ASSIGN).
+			///		- explanation: when the bottom up parser encounters the next operator, and it's at the end of a production,
+			///		  there is a shift/reduce conflict. Shift means 'prefer the incoming operator, it has higher precedence'.
+			///		  Reduce means 'prefer the existing production, it has higher precedence'. The prec. of production and token are compared.
+			///		  associativity also does something, idk.
+			///		  operator token associativity marks the token itself, while production token creates a fake token for an expression,
+			///		  because the precedence of a production comes from the last token and that happens to be 'expr' which is used in multiple productions
+			///		  and so one value of precedence for 'expr' doesn't help us.
+			///	2. use %right and %left when possible - they set associativity and precedence simultaneously.
+			///	   if not possible, use %precedence to set only precedence without associativity.
+			///  3. Things that appear later in the %right %left list (on a lower line) are "more important".
+			///  4. Use the 'C operator precedence list' and write it down upside-down while following rule 1.
+			///  5. Check unit-tests and compare actual ASTs to check if production is correct.
+			///  6. suspect ambiguous tokens as it is unclear which line to put them on 
+			///		suspect tokens:
+			///		  INC / NEG are tokens in both POSTOP and PREOP (++x, x++, --x, x--)
+			/// 	  '*' used in both DEREF and MULDIV (1*2, *ptr)
+			///		  - used in both NEG and ADDSUB (-x, 2-1)
+			///		  ( used in CALL, CAST and SUBEXPR ( foo(), (int)x, 1*(2+3))
+			///		  & used in both LOGIC and DEREF ( isA & isB, &x)
+			///
+
+		%right '=' ASSIGN
+		%left LOGIC
+		%left EQUAL NOTEQUAL COMPARE
+		%left '+' '-' ADDSUB
+		%left '/' '%' '*' MULDIV EXP
+		%right PREOP INC DEC NEG '!' LNEG CAST DEREF '&' REF // '*' '-' 
+		%left '(' '[' '.' POSTOP CALL INDEX DOT BRACELIST // INC DEC
+		%precedence SUBEXPR
+	
+	*/
+	
+	// PEMDAS
+	// MULDIV before ADDSUB
+	// correct:
+	  // |  +stmt
+	  // |  |\imp_stmt
+	  // |  | \expr_=
+	  // |  |  +expr_id "x"
+	  // |  |  |\ID "x"
+	  // |  |  \expr_+
+	  // |  |   +expr_const "1"
+	  // |  |   |\INTEGER "1"
+	  // |  |   \expr_*
+	  // |  |    +expr_const "2"
+	  // |  |    |\INTEGER "2"
+	  // |  |    \expr_const "3"
+	  // |  |     \INTEGER "3"
+	writePort(1, 1);
+	x = 1 + 2*3; // 7 or 9?
+	writePort(2, x);
+	if ( x != 7) crash(); end
+	x = 0;
+	
+	// reverse order
+	// correct:
+	  // |  +stmt
+	  // |  |\imp_stmt
+	  // |  | \expr_=
+	  // |  |  +expr_id "x"
+	  // |  |  |\ID "x"
+	  // |  |  \expr_+
+	  // |  |   +expr_*
+	  // |  |   |+expr_const "3"
+	  // |  |   ||\INTEGER "3"
+	  // |  |   |\expr_const "2"
+	  // |  |   | \INTEGER "2"
+	  // |  |   \expr_const "1"
+	  // |  |    \INTEGER "1"
+	writePort(1, 2);
+	x = 3*2 + 1;
+	writePort(2, x);
+	if ( x != 7) crash(); end
+	x = 0;
+	
+	// EXP before MULDIV
+	// correct?...
+	  // |  +stmt
+	  // |  |\imp_stmt
+	  // |  | \expr_=
+	  // |  |  +expr_id "x"
+	  // |  |  |\ID "x"
+	  // |  |  \expr_/
+	  // |  |   +expr_*
+	  // |  |   |+expr_const "2"
+	  // |  |   ||\INTEGER "2"
+	  // |  |   |\expr_^
+	  // |  |   | +expr_const "3"
+	  // |  |   | |\INTEGER "3"
+	  // |  |   | \expr_const "4"
+	  // |  |   |  \INTEGER "4"
+	  // |  |   \expr_const "2"
+	  // |  |    \INTEGER "2"
+	writePort(1, 3);
+	x = 2 * 3 ^ 4 / 2; // good: (2 * (3^4)) / 2 = 81; bad: (((2*3)^4)/2) = 648;  2 * (3^(4/2)) = 18;
+					   // bad: 2 * ((3^4)/2) = 80 (due to 81/2 = 40.5 -> 40)
+	writePort(2, x);
+	if (x != 81) crash(); end
+	x = 0;
+	
+	// parenthesis before exp
+	//writePort(1, 3);
+	//x = 2 * (3 - 1) ^ 4; //idk
+	
+	// ref before equals
+	// correct:
+	  // |  +stmt
+	  // |  |\imp_stmt
+	  // |  | \expr_=
+	  // |  |  +expr_id "x"
+	  // |  |  |\ID "x"
+	  // |  |  \expr_==
+	  // |  |   +expr_ref
+	  // |  |   |\expr_id "x"
+	  // |  |   | \ID "x"
+	  // |  |   \expr_ref
+	  // |  |    \expr_id "x"
+	  // |  |     \ID "x"
+	writePort(1, 4);
+	x = &x == &x;
+	writePort(2, x);
+	if (x != 1) crash(); end
+	x = 0;
+	
+	// another
+	// correct:
+	  // |  +stmt
+	  // |  |\imp_stmt
+	  // |  | \expr_=
+	  // |  |  +expr_id "x"
+	  // |  |  |\ID "x"
+	  // |  |  \expr_subexpr
+	  // |  |   \expr_==
+	  // |  |    +expr_ref
+	  // |  |    |\expr_index
+	  // |  |    | +expr_id "arr"
+	  // |  |    | |\ID "arr"
+	  // |  |    | \expr_const "3"
+	  // |  |    |  \INTEGER "3"
+	  // |  |    \expr_ref
+	  // |  |     \expr_subexpr
+	  // |  |      \expr_index
+	  // |  |       +expr_id "arr"
+	  // |  |       |\ID "arr"
+	  // |  |       \expr_const "3"
+	  // |  |        \INTEGER "3"
+	writePort(1, 5);
+	x = (&arr[3] == &(arr[3]));
+	writePort(2, x);
+	if (x != 1) crash(); end
+	x = 0;
+	
+	// member access before address
+	// correct:
+	  // |  +stmt
+	  // |  |\imp_stmt
+	  // |  | \expr_=
+	  // |  |  +expr_id "x"
+	  // |  |  |\ID "x"
+	  // |  |  \expr_==
+	  // |  |   +expr_ref
+	  // |  |   |\expr_.
+	  // |  |   | +expr_id "derp"
+	  // |  |   | |\ID "derp"
+	  // |  |   | \expr_id "m1"
+	  // |  |   |  \ID "m1"
+	  // |  |   \expr_ref
+	  // |  |    \expr_subexpr
+	  // |  |     \expr_.
+	  // |  |      +expr_id "derp"
+	  // |  |      |\ID "derp"
+	  // |  |      \expr_id "m1"
+	  // |  |       \ID "m1"
+	writePort(1, 6);
+	derp.m0 = 100;
+	derp.m1 = 200;
+	derp.m2 = 300;
+	x = &derp.m1 == &(derp.m1);
+	writePort(2, x);
+	if (x != 1) crash(); end
+	x = 0;
+	
+	// post-inc before indirection
+	// correct:
+	  // |  +stmt
+	  // |  |\imp_stmt
+	  // |  | \expr_=
+	  // |  |  +expr_id "x"
+	  // |  |  |\ID "x"
+	  // |  |  \expr_deref
+	  // |  |   \expr_++
+	  // |  |    \expr_.
+	  // |  |     +expr_id "derp"
+	  // |  |     |\ID "derp"
+	  // |  |     \expr_id "p"
+	  // |  |      \ID "p"
+	writePort(1, 7);
+	derp.p = &derp.m1;
+	x = *derp.p++; // was &(m1 == 200), now &(m2 == 300)
+	writePort(2, x);
+	if (x != 200) crash(); end
+	x = 0;
+	
+	// now check if it actually incremented
+	// correct:
+		// |  +stmt
+		// |  |\imp_stmt
+		// |  | \expr_=
+		// |  |  +expr_id "x"
+		// |  |  |\ID "x"
+		// |  |  \expr_subexpr
+		// |  |   \expr_==
+		// |  |    +expr_.
+		// |  |    |+expr_id "derp"
+		// |  |    ||\ID "derp"
+		// |  |    |\expr_id "p"
+		// |  |    | \ID "p"
+		// |  |    \expr_ref
+		// |  |     \expr_.
+		// |  |      +expr_id "derp"
+		// |  |      |\ID "derp"
+		// |  |      \expr_id "m2"
+		// |  |       \ID "m2"
+	x = (derp.p == &derp.m2);
+	writePort(1, 8);
+	writePort(2, x);
+	if (x != 1) crash(); end
+	x = 0;
+	
+	// does & behave as AND or as REF?  should happen before addition.
+	// correct:
+	  // |  +stmt
+	  // |  |\imp_stmt
+	  // |  | \expr_=
+	  // |  |  +expr_id "x"
+	  // |  |  |\ID "x"
+	  // |  |  \expr_==
+	  // |  |   +expr_subexpr
+	  // |  |   |\expr_+
+	  // |  |   | +expr_ref
+	  // |  |   | |\expr_id "derp"
+	  // |  |   | | \ID "derp"
+	  // |  |   | \expr_const "1"
+	  // |  |   |  \INTEGER "1"
+	  // |  |   \expr_subexpr
+	  // |  |    \expr_+
+	  // |  |     +expr_subexpr
+	  // |  |     |\expr_ref
+	  // |  |     | \expr_id "derp"
+	  // |  |     |  \ID "derp"
+	  // |  |     \expr_const "1"
+	  // |  |      \INTEGER "1"
+	writePort(1, 8);
+	x = (&derp + 1) == ((&derp) + 1);
+	writePort(2, x);
+	if (x != 1) crash(); end
+	x = 0;
+
+	/// does SUB have left-to-right associativity?
+	// correct:
+		// |  +stmt
+		// |  |\imp_stmt
+		// |  | \expr_=
+		// |  |  +expr_id "x"
+		// |  |  |\ID "x"
+		// |  |  \expr_-
+		// |  |   +expr_-
+		// |  |   |+expr_const "10"
+		// |  |   ||\INTEGER "10"
+		// |  |   |\expr_const "2"
+		// |  |   | \INTEGER "2"
+		// |  |   \expr_const "1"
+		// |  |    \INTEGER "1"
+	writePort(1, 9);
+	x = 10 - 2 - 1; // good: (10-2)-1 = 7; bad: 10 - (2-1) = 9
+	writePort(2, x);
+	if (x != 7) crash(); end
+	x = 0;
+
+	/// does DIV have left-to-right associavitiy?
+	// correct:
+		// |  +stmt
+		// |  |\imp_stmt
+		// |  | \expr_=
+		// |  |  +expr_id "x"
+		// |  |  |\ID "x"
+		// |  |  \expr_/
+		// |  |   +expr_/
+		// |  |   |+expr_const "360"
+		// |  |   ||\INTEGER "360"
+		// |  |   |\expr_const "12"
+		// |  |   | \INTEGER "12"
+		// |  |   \expr_const "3"
+		// |  |    \INTEGER "3"
+	writePort(1, 10);
+	x = 360 / 12 / 3; // good (360/12)/3 = 30/3 = 10; bad: 360 / (12/3) = 360/4 = 90;
+	writePort(3, x);
+	if (x != 10) crash(); end
+	x = 0;
+	
+	/// logic stuff
+	writePort(1, 11);
+	x = !(20 < 10) & !(20 > 30);
+	writePort(3, x);
+	if (x != 1) crash(); end
+	x = 0;
+	
+	writePort(1, 12);
+	x = !1 & !1; // (!1) & (!1) == 0 & 0 == 0; !(1 & !1) == !(1 & 0) == !(0) = 1;
+	writePort(3, x);
+	if (x != 0) crash(); end
+	x = 0;
+	
+	writePort(1, 13);
+	x = 20 <= 30 & 20 >= 10;    //  (20 <= 30) & (20 >= 10) == 1 & 1 == 1;
+								//  20 <= (30 & (20 >= 10)) == 20 <= (30 & 1) == 20 <= 1 == 0; 
+	writePort(1, x);
+	if (x != 1) crash(); end
+	x = 0;
+	
+	
+	
+
+end
+
+
+void test_1_args_plain()
+	test_1_args_plain_helper(1, 2, 3);	
+end
+
+
+void test_1_args_plain_helper(int x, int y, int z)
+	writePort(0, 1);
+	if((x == 1) & (y == 2) & (z == 3))
+		return;
+	end
+	crash();
+end
+
+int test_2_var = 123;
+void test_2_global_vars()
+	expect_basic(2,1,test_2_var, 123);
+	test_2_var = 234;
+	expect_basic(2,2,test_2_var, 234);
+	test_2_var = 123;
+end
+
+void test_3_pointer()
+	test_3_local_pointer();
+	test_3_global_pointer();
+	test_3_array_pointer();
+end
+
+void test_3_local_pointer()
+	int derp = 6;
+	expect_basic(3, 1, derp,       6);
+	expect_stack(3, 2, (int)&derp,-5);
+	int *p = derp; /// *derp is forbidden by compiler
+	expect_basic(3, 3, (int)p,     6); 
+	expect_global(3, 4, *p,       14);
+end
+
+int test3_var = 7;
+void test_3_global_pointer()
+	expect_basic(3, 5, test3_var,      7);
+	expect_global(3, 6, (int)&test3_var, 12402);
+	int *p = test3_var; /// *test3_var is forbidden by compiler
+	expect_global(3, 7, *p, 25);
+end
+
+void foo_array()
+	int arr[10];
+end
+
+int *arr_addr = 0;
+void test_3_array_pointer()
+	int arr[4];
+	arr[0] = 10;
+	arr[1] = 11;
+	arr[2] = 12;
+	arr[3] = 13;
+	writePort(4, arr[2]);
+	writePort(5, (int)&arr);
+	arr_addr = &arr;
+	writePort(6, (int)arr_addr);
+	writePort(7, (int)&(arr_addr[2]));
+	expect_stack(3, 8,  (int)&arr,   -8);
+	expect_basic(3, 9,  arr[0], 10);
+	expect_basic(3, 10, arr[2], 12);
+	expect_basic(3, 11, arr_addr[2], 12);
+	int d = arr[1];
+	expect_basic(3, 12, d, 11);
+	test_3_array_arg(&arr); // array-by-ptr
+	// btw now we also need to test array-by-val
+end
+
+void test_3_array_arg(int* arg)
+	expect_basic(3, 13, (int)arg,(int)arr_addr);
+	expect_stack(3, 14, (int)arg,      -8);
+	expect_stack(3, 15, (int)&arg,    -27);
+	expect_basic(3, 16, arg[2],   12);
+	expect_basic(3, 17, *arg,     10);
+	expect_basic(3, 18, *(arg+1), 11);
+end
+
+int test_4_var = 0;
+int test_4_helper()
+	test_4_var = 1;
+	return 10;
+end
+
+int test_4_funcptr()
+	expect_global(4, 1, (int)(int*)test_4_helper,  1098);
+	//expect(4, 2, &test_4_helper, 1098, TYPE_GLOBAL);
+	int *p1 = test_4_helper;
+	int p2 = (int)(int*)test_4_helper;
+	expect_global(4, 3, (int)p1,             1098);
+	expect_global(4, 4, p2,             1098);
+	int res = p1();
+	expect_basic(4, 5, res,              10);
+	expect_basic(4, 6, test_4_var,        1); ///ps: missing semicolon here is reported as "no source text"
+	return CODE_OK;
+end
+
+int test_5_arithmetic()
+	test_5_arithmetic_integer();
+	test_5_arithmetic_float();
+end
+
+int test_5_arithmetic_integer()
+	int x = 10;
+	int y = 20;
+
+	expect_basic(5,  1, x+y, 30);
+	expect_basic(5,  2, x-y, -10);
+	expect_basic(5,  3, x*y, 200);
+	expect_basic(5,  4, (int)(float)(x/y), 0);
+	expect_basic(5,  5, y/x, 2);
+	expect_basic(5,  6, x>y, 0);
+	expect_basic(5,  7, x<y, 1);
+	expect_basic(5,  8, y<x, 0);
+	expect_basic(5,  9, y>x, 1);
+	expect_basic(5, 10, x==y, 0);
+	expect_basic(5, 11, x!=y, 1);
+	expect_basic(5, 12, x&y, 1);
+	expect_basic(5, 13, x|y, 1);
+	expect_basic(5, 14, !x, 0);
+	expect_basic(5, 15, !!x, 1);
+	
+	return CODE_OK;
+end
+
+int test_5_arithmetic_float()
+	float pi = 3.14;
+	float x = 0.1;
+	expect_basic(5, 16, pi, 3);
+	expect_basic(5, 17, x, 0);
+	expect_basic(5, 18, pi*10, 31);
+	expect_basic(5, 19, x*10, 1);
+	expect_basic(5, 20, pi*x, 0);
+	//ps. conversion from float to int should happen through
+	//expression (op) typechecks, but that's not yet implemented
+	expect_basic(5, 21, (int)(float)(2*pi/x), 62); 
+	//printf("pi = %f\n", pi);
+end
+
+void set_buff_mario(char *buff)
+	buff[0] = 'm';
+	buff[1] = 'a';
+	buff[2] = 'r';
+	buff[3] = 'i';
+	buff[4] = 'o';
+	buff[5] = 0;
+end
+
+void set_buff_warudo(char *buff)
+	buff[0] = 'w';
+	buff[1] = 'a';
+	buff[2] = 'r';
+	buff[3] = 'u';
+	buff[4] = 'd';
+	buff[5] = 'o';
+	buff[6] = 0;
+end
+
+int test_6_arrays()
+	char arr[10];
+	set_buff_mario(&arr);		// pass array by pointer
+	/// arr == {mario}
+	expect_basic(6, 1, arr[0], 'm');
+	expect_basic(6, 2, *arr, 'm');	// array is filled through literal index
+	expect_basic(6, 3, arr[1], 'a');
+	expect_basic(6, 4, arr[2], 'r');
+	expect_basic(6, 5, arr[3], 'i');
+	expect_basic(6, 6, arr[4], 'o');
+	expect_basic(6, 7, arr[5], 0);	// array is zero-terminated
+	int i = 1;
+	arr[i] = 'o';	
+	/// arr == {morio}			
+	expect_basic(6, 8, arr[1], 'o');	// array is writeable by local var index
+	expect_basic(6, 9, arr[i], 'o');	// array is readible by local var index
+	int b1 = (&(arr[i]) == (&arr)+i); // index is a (PTR or LVAL) whose address is equivalent to a sum of PTR+RVAL
+	expect_basic(6, 10, b1, 1);		
+	arr[i+2] = 'e';	// array is writeable by arithmetic expression
+	/// arr == {moreo}
+	expect_basic(6, 11, arr[3], 'e');
+	expect_basic(6, 12, arr[i+3], 'o');	// array is readible by arithmetic expression
+
+	int L = strlen(&arr);
+	expect_basic(6, 13, L, 5);			// stdlib function "strlen" works
+
+	char arr2[20];
+	set_buff_warudo(&arr2);			// another test buffer
+	/// arr  == {moreo\0}
+	/// arr2 == {warudo\0}
+	expect_basic(6, 14, arr2[0], 'w');
+	expect_basic(6, 15, arr2[1], 'a');
+	expect_basic(6, 16, arr2[2], 'r');
+	expect_basic(6, 17, arr2[3], 'u');
+	expect_basic(6, 18, arr2[4], 'd');
+	expect_basic(6, 19, arr2[5], 'o');
+	expect_basic(6, 20, arr2[6], 0);
+
+	memmove(&arr2, &arr, L+1);
+	/// arr  == {moreo\0}
+	/// arr2 == {moreo\0\0}
+	expect_basic(6, 21, arr2[0], 'm'); // stdlib function "memmove" works
+	expect_basic(6, 22, arr2[1], 'o');
+	expect_basic(6, 23, arr2[2], 'r');
+	expect_basic(6, 24, arr2[3], 'e');
+	expect_basic(6, 25, arr2[4], 'o');
+	expect_basic(6, 26, arr2[5], 0);
+	expect_basic(6, 27, arr2[6], 0);
+end
+
+
+class Test_7_class_derp //class Derp
+	int x = 1;
+	int y;
+	int sum(int z)
+		int w = x+y+z;
+		return w;
+	end
+	int test71()
+		//printf("derp.t71:  x = %d\n", x);
+		//printf("derp.t71: &x = %d\n", (int)&x);
+		//printf("derp.t71: this = %d\n", this);
+		//printf("derp.t71: y1 = %d\n", y);
+		y = 3;
+		//printf("derp.t71: y2 = %d\n", y);
+	end
+	int set_y(int new_y)
+		y = new_y;
+	end
+	int report_y()
+		//printf("derp.ry: y = %d\n", y);	
+	end
+end
+
+int test_7_class_local()
+	class Test_7_class_derp derp1;
+	//printf("test7: &derp1 = %d\n", (int)&derp1);
+	//printf("test7: &(derp1.x) = %d\n", (int)&(derp1.x));
+	//printf("test7: derp1.x = %d\n", derp1.x);
+	derp1.test71();
+	expect_stack(7, 1, (int)&derp1,		-23);
+	derp1.y = 12;
+	expect_basic(7, 2, derp1.y,	     12);
+	derp1.report_y();
+	derp1.set_y(4);
+	expect_basic(7, 3, derp1.y,		  4);
+	expect_basic(7, 4, derp1.x,		  1);
+	expect_basic(7, 5, derp1.sum(4),	  9);
+	//expect(7, 5, &(derp1.sum),   2496, TYPE_GLOBAL); // semantic error: function is already an address
+	//expect(7, 5, &derp1.sum,   2496, TYPE_GLOBAL);   // semantic error: function is already an address
+	expect_global(7, 6, (int)(int*)derp1.sum,    4573);
+	return CODE_OK;
+end
+
+int test_7_class_by_val(class Test_7_class_derp derp2)
+	writePort(6, 199999);
+	expect_stack(7, 7, (int)&derp2,		 -21);
+	expect_basic(7, 8, derp2.x,		  3);
+	expect_basic(7, 9, derp2.y,		  4);
+	expect_basic(7, 10, derp2.sum(5),  12);
+	expect_global(7, 11, (int)(int*)derp2.sum,   4573);
+	return CODE_OK;
+end
+
+int test_7_class_by_ptr(class Test_7_class_derp *derp3)
+	expect_stack(7, 12, (int)derp3,		 -3);
+	expect_stack(7, 13, (int)&derp3,	     -20);
+	expect_basic(7, 14, (*derp3).x,	  5);
+	expect_basic(7, 15, derp3.x,		  5);
+	expect_basic(7, 16, derp3.y,		  6);
+	expect_basic(7, 17, derp3.sum(7),	 18);
+	expect_global(7, 18, (int)(int*)derp3.sum,   4573);
+	return CODE_OK;
+end
+
+class Test_7_class_derp derp4;
+
+int test_7_class_global()
+	expect_global(7, 19, (int)&derp4,	  999);
+	void *p1 = &derp4;
+	expect_global(7, 20, (int)p1,		  999);
+	void *px = &(derp4.x);
+	void *py = &(derp4.y);
+	int b1 = (p1 == px);
+	int b2 = ((p1 + 1) == py);
+	expect_basic(7, 21, b1, 			1);
+	expect_basic(7, 22, b2,			1);
+	expect_basic(7, 23, *(int*)px,		1);
+	expect_basic(7, 24, derp4.x,		1);
+	derp4.y = 4;
+	expect_basic(7, 25, *(int*)py,			4);
+	expect_basic(7, 26, derp4.y,		4);
+	expect_basic(7, 27, derp4.sum(10),15);
+	return CODE_OK;
+end
+
+void* test_7_class1_addr = 0;
+void* test_7_class2_addr = 0;
+
+class Test_7_class1
+	int x = 10;
+	void foo(int y)
+		expect_basic(7, 28, (int)this, (int)test_7_class1_addr);
+		expect_basic(7, 29, x, 10);
+		expect_basic(7, 30, y, 20);
+	end
+	
+	void baz(int y)
+		expect_basic(7, 35, (int)this, (int)test_7_class1_addr);
+		expect_basic(7, 36, x, 10);
+		expect_basic(7, 37, y, 50);
+	end
+end
+
+class Test_7_class2
+	int x = 30;
+	class Test_7_class1* c1;
+	void bar(int y)
+		expect_basic(7, 31, (int)this, (int)test_7_class2_addr);
+		expect_basic(7, 32, x, 30);
+		expect_basic(7, 33, y, 40);
+		expect_basic(7, 34, (int)c1, (int)test_7_class1_addr);
+		c1.baz(50);
+	end
+end
+
+class Test_7_class1 derp_c1;
+class Test_7_class2 derp_c2;
+
+int test_7_class_method()
+	test_7_class1_addr = &derp_c1;
+	test_7_class2_addr = &derp_c2;
+
+	derp_c1.foo(20);
+	derp_c2.c1 = &derp_c1;
+	derp_c2.bar(40);
+end
+
+int test_7_class_copy()
+	class Test_7_class_derp derp6;
+	class Test_7_class_derp derp7;
+	derp6.x = 10;
+	derp6.y = 20;
+	derp7.x = 30;
+	derp7.y = 40;
+	expect_basic(7, 35, derp6.x, 10);
+	expect_basic(7, 36, derp6.y, 20);
+	expect_basic(7, 37, derp7.x, 30);
+	expect_basic(7, 38, derp7.y, 40);
+	derp6 = derp7;
+	expect_basic(7, 39, derp6.x, 30);
+	expect_basic(7, 40, derp6.y, 40);
+	return CODE_OK;
+end
+
+int test_7_class()
+	test_7_class_local();
+	class Test_7_class_derp derp4;
+	derp4.x = 3; derp4.y = 4;
+	test_7_class_by_val(derp4);
+	class Test_7_class_derp derp5;
+	derp5.x = 5; derp5.y = 6;
+	test_7_class_by_ptr(&derp5);
+	test_7_class_global();
+	test_7_class_method();
+	test_7_class_copy();
+	return CODE_OK;
+end
+
+class Test_8_A
+	int x = 10;
+	int y = 20;
+	int foo()
+		return (int)this+x+y;
+	end
+end
+
+class Test_8_B
+	int x = 30;
+	int y = 40;
+	class Test_8_A arr[10];
+	int bar()
+		class Test_8_A a1;
+		class Test_8_A a2;
+		a2.x = 11;
+		a2.y = 22;
+		arr[0] = a2;
+		expect_basic(8,1,x,30);
+		expect_basic(8,2,y,40);
+		expect_basic(8,3,a1.x,10);
+		expect_basic(8,4,a1.y,20);
+		expect_basic(8,5,a2.x,11);
+		expect_basic(8,6,a2.y,22);
+		
+		void *p = this;
+		expect_basic(8,7,(int)&x, (int)(p+0));
+		expect_basic(8,8,(int)&y, (int)(p+1));
+		expect_basic(8,9,(int)&arr, (int)(p+2));
+		void *p_arr = &arr;
+		int s = 2; //size of Test_8_A
+		void *p_arr_0 = p_arr+s*0;
+		void *p_arr_1 = p_arr+s*1;
+		void *p_arr_2 = p_arr+s*2;
+		expect_basic(8,10,(int)&(arr[0]), (int)p_arr_0);
+		expect_basic(8,11,(int)&(arr[1]), (int)p_arr_1);
+		expect_basic(8,12,(int)&(arr[2]), (int)p_arr_2);
+		
+		void *p_a2 = &a2;
+		expect_basic(8,13,(int)&(a2.x), (int)p_a2);
+		expect_basic(8,14,(int)&(a2.y),(int)(p_a2+1));
+		
+		class Test_8_A *pca0 = p_arr_0;
+		class Test_8_A *pca1 = p_arr_1;
+		class Test_8_A *pca2 = p_arr_2;
+		
+		expect_basic(8,15,(int)&(arr[0].x), (int)pca0);
+		expect_basic(8,16,(int)&(arr[1].y), (int)(pca1+1)); //Q: should pointer arithmetic respect type?
+		
+		expect_basic(8,17,arr[0].foo(), ((int)pca0)+pca0.x+pca0.y);
+		expect_basic(8,18,arr[1].foo(), ((int)pca1)+pca1.x+pca1.y);
+	end
+end
+
+int test_8_class_array()
+	class Test_8_B B;
+	B.bar();
+	return CODE_OK;
+end
+
+// void expect(int test_num,int subtest_num, int val, int ref, int type)
+	// if ((type == TYPE_STACK) & unit_test_ignore_stack_address) return; end
+	// if ((type == TYPE_GLOBAL) & unit_test_ignore_global_address) return; end
+	// writePort(0, test_num);
+	// writePort(1, subtest_num);
+	// if ((type == TYPE_STACK) & unit_test_adaptive_stack) val = val - unit_test_stack_offset; end
+	// writePort(2, val);
+	// writePort(3, ref);
+	// if(val != ref) crash(); end
+// end
+
+void expect_basic(int test_num,int subtest_num, int val, int ref)
+	writePort(0, test_num);
+	writePort(1, subtest_num);
+	writePort(2, val);
+	writePort(3, ref);
+	if(val != ref) crash(); end
+end
+void expect_global(int test_num,int subtest_num, int val, int ref)
+	if( unit_test_ignore_global_address) return; end
+	writePort(0, test_num);
+	writePort(1, subtest_num);
+	writePort(2, val);
+	writePort(3, ref);
+	if(val != ref) crash(); end
+end
+void expect_stack(int test_num,int subtest_num, int val, int ref)
+	if( unit_test_ignore_stack_address ) return; end
+	writePort(0, test_num);
+	writePort(1, subtest_num);
+	if ( unit_test_adaptive_stack) val = val - unit_test_stack_offset; end
+	writePort(2, val);
+	writePort(3, ref);
+	if(val != ref) crash(); end
+end
+
+
+void report_all_ok()
+	writePort(0, -1);
+	writePort(1, -1);
+	writePort(2, -1);
+	writePort(3, -1);	
+end
+
+void unit_test_set_base_offset()
+	int base = 0;
+	unit_test_stack_offset = (int)&base;
+	writePort(7, unit_test_stack_offset);
+end
+
+void run_all_tests()
+	unit_test_ignore_global_address = 1;
+	unit_test_ignore_stack_address = 1;
+	unit_test_adaptive_stack = 1;
+	
+	unit_test_set_base_offset();
+	test_0_associativity();
+	test_1_args_plain();
+	test_2_global_vars();
+	test_3_pointer();
+	test_4_funcptr();
+	test_5_arithmetic();
+	test_6_arrays();
+	//unit_test_ignore_global_address = 0;
+	//unit_test_ignore_stack_address = 0;
+	test_7_class();
+	test_8_class_array();
+	report_all_ok();
+end
+
+

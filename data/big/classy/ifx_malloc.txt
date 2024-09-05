@@ -1,0 +1,55 @@
+// abstract interface for allocators (malloc implementations)
+
+class malloc_info
+	int size_free;
+	int size_used;
+	int blocks_free;
+	int blocks_used;
+end
+
+class ifx_malloc
+	void *impl = 0;
+	void **malloc = 0;  // void* malloc(int size);
+	void *free = 0;     // void free(void *p);
+	void **realloc = 0; // void* realloc(void *p, int size);
+	class malloc_info *malloc_get_counts = 0;
+end
+
+class ifx_malloc cur_allocator;
+
+
+void *malloc(int size)
+	if(cur_allocator.malloc)
+		return cur_allocator.malloc(cur_allocator.impl, size);
+		//
+		// is this same as void **p = cur_allocator.malloc; p() ?
+		// or are we accidentally setting 'this'
+		// or do we WANT to set 'this'?
+	else
+		error("malloc error: cur_allocator.malloc not set");
+	end
+end
+
+void free(void *p)
+	if(cur_allocator.free)
+		cur_allocator.free(cur_allocator.impl, p);
+	else
+		error("malloc error: cur_allocator.free not set");
+	end
+end
+
+void *realloc(void *p, int size)
+	if(cur_allocator.realloc)
+		return cur_allocator.realloc(cur_allocator.impl, p, size);
+	else
+		error("malloc error: cur_allocator.realloc not set");
+	end
+end
+
+class malloc_info malloc_get_counts()
+	if(cur_allocator.malloc_get_counts)
+		return cur_allocator.malloc_get_counts(cur_allocator.impl);
+	else
+		error("malloc error: cur_allocator.malloc_get_counts not set");
+	end
+end

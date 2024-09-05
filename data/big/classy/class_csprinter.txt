@@ -1,0 +1,165 @@
+// class CSPrinter - handles screen extents and scrolling logic
+#include "data_in/big/classy/class_screen.txt"
+#include "data_in/big/number.txt"
+#include "data_in/big/classy/ifx_iostream.txt"
+
+class CSPrinter
+	class CScreen *scr = 0;
+	
+	int box_x_min = 0;
+	int box_y_min = 0;
+	int box_x_max = 30;
+	int box_y_max = 19;
+
+	int last_x = 29;
+	int last_y = 17;
+	int cur_x = 0;
+	int cur_y = 0;
+
+	int charcode_NL = '\n';//10; //same as enter
+	int charcode_BACK = 13; //same as backspace
+	int charcode_CR = 14; //same as backspace -> go to prev char or end of prev line
+	int charcode_FILL = 15; //means "fill the line" (and stop at the last char)
+	int charcode_BELL = 16; //make a beep or something
+
+	class ifx_iostream ifx;
+
+	/*
+	void init()
+		//printf("CSPrinter init, this = %d\n", (int)this);
+		printf("CSPrinter constructor @ %d\n", (int)this);
+		scr = 0;
+		box_x_min = 0;
+		box_y_min = 0;
+		box_x_max = 30;
+		box_y_max = 19;
+		last_x = 29;
+		last_y = 17;
+		cur_x = 0;
+		cur_y = 0;
+	end
+	*/
+
+	void init()
+		ifx.impl = (void*)this;
+		ifx.putch = this.cs_putch;
+	end
+	
+	void set_print_cursor(int x, int y) cur_x = x; cur_y = y; end
+
+
+	//sequences: 
+	//NL -> print pointer is at the beginning of the next line
+	//FILL -> line filled with spaces; print pointer at the end of this line
+	//CR -> print pointer at the beginning of this line
+	//CR FILL CR -> the line is blank and you are at the beginning
+	//BACK CR -> go to beginning of prev line
+	//hello BACK z -> hellz
+
+	int cs_putch(char C)		
+		writePort(0, 70);
+		this.print_char(C, scr.col); 
+		writePort(0, 71);
+		return C;	
+		writePort(0, 72);
+	end
+	int cs_puts(char *str)		this.cs_prints(str, scr.col); return strlen(str);	end
+
+	void print_char(char C, int col)
+		writePort(0, 73);
+		if(C == charcode_NL)	this.cs_newline(); return; end
+		writePort(0, 74);
+		if(C == charcode_BACK)	this.cs_prevcol();	return; end
+		writePort(0, 75);
+		if(C == charcode_CR)	cur_x = 0;			return; end
+		writePort(0, 76);
+		if(C == charcode_FILL)
+		writePort(0, 77);
+			for(int i = cur_x; i < last_x; i++)
+		writePort(0, 78);
+				scr.putchXY(' ', i, cur_y);
+		writePort(0, 79);
+			end
+		writePort(0, 80);
+			cur_x = last_x;
+		writePort(0, 81);
+			return;
+		writePort(0, 82);
+		end
+		writePort(0, 83);
+		if(C == charcode_BELL)	this.cs_beep();		return; end
+		writePort(0, 84);
+		//if(C > 31)
+		scr.putchXY(C, cur_x, cur_y);
+		writePort(0, 85);
+		this.cs_newcol();
+		writePort(0, 86);
+		//end
+	end
+
+	void cs_prints(char *str2, int col) //maybe str conflicts with the str in print?
+		while(*str2)
+			print_char(*str2++, col);
+		end
+	end
+
+	void cs_printn(int num, int col)
+		char buff[20];
+		int2str(num, &buff);
+		this.cs_prints(&buff, col);
+	end
+
+	void cs_newline()
+		cur_x = 0;
+		cur_y++;
+		if(cur_y > last_y-1)
+			this.shift_up();
+		end
+	end
+
+	void cs_prevline()
+		cur_x = last_x;
+		cur_y--;
+		if(cur_y < 0)
+			this.shift_down();
+		end
+	end
+
+	void cs_newcol()
+		cur_x++;
+		if(cur_x > last_x)
+			this.cs_newline();
+		end
+	end
+
+	void cs_prevcol()
+		cur_x--;
+		if(cur_x < 0)
+			this.cs_prevline();
+		end
+	end
+
+	void cs_beep() end
+
+	void shift_up()
+		if(cur_y > last_y-1)
+			scr.shift_vertical(1);
+			cur_y--;
+		end
+	end
+
+	void shift_down()
+		if(cur_y < 0)
+			scr.shift_vertical(-1);
+			cur_y++;
+		end
+	end
+
+	void set_print_box(int x1, int y1, int x2, int y2)
+		box_x_min = x1;
+		box_y_min = y1;
+		box_x_max = x2;
+		box_y_max = y2;
+	end
+end
+

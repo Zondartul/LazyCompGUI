@@ -1,0 +1,167 @@
+// classes to read information from the debug_info tables provided by LazyComp
+// this includes symbol tables, function names, and variable names.
+
+class debug_info_func
+	int record_len = 0;
+	int lbl_entrance = 0;
+	int lbl_exit = 0;
+	int ir_name_len = 0;
+	char *ir_name = 0;
+	int user_name_len = 0;
+	char *user_name = 0;
+	
+	void deserialize(int *p)
+			check_stack_size();
+		int *p_initial = p;
+		record_len = *p++;
+		lbl_entrance = *p++;
+		lbl_exit = *p++;
+		ir_name_len = *p++;
+		ir_name = p; p = p + ir_name_len;
+		user_name_len = *p++;
+		user_name = p;
+		err_printf(999, "di_func @ %d:\n got [%s]\n", (int)p_initial, ir_name);
+	end
+end
+
+
+class debug_info_var
+	int record_len = 0;
+	int lbl_from = 0;
+	int lbl_to = 0;
+	int pos = 0;
+	int framedepth = 0;
+	int ir_name_len = 0;
+	char *ir_name = 0;
+	int user_name_len = 0;
+	char *user_name = 0;
+
+	void deserialize(int *p)
+			check_stack_size();
+		record_len = *p++;
+		lbl_from = *p++;
+		lbl_to = *p++;
+		pos = *p++;
+		framedepth = *p++;
+		ir_name_len = *p++;
+		ir_name = p; p = p + ir_name_len;
+		user_name_len = *p++;
+		user_name = p;
+	end
+end
+
+int get_var_at_ip_helper(int ip, class debug_info_var var)
+			check_stack_size();
+	var.pos = 10;									/// this works
+	//if(!(var.lbl_from > ip) & !(var.lbl_to < ip)) 	/// this doesn't
+	int x = var.lbl_from;
+	int y = var.lbl_to;
+	if((ip >= x) & (ip <= y)) 	/// this works? /// BUG: symtable of IF is broken
+		return 1;
+	end
+	return -1;
+end
+
+class debug_info_var_db
+	class debug_info_var vars[1000];
+	int n_vars = 0;
+	
+	void deserialize(int *p)
+			check_stack_size();
+		n_vars = *p++;
+		class debug_info_var var;
+		for(int i = 0; i < n_vars; i++)
+			var.deserialize(p);
+			p = p+var.record_len;
+		end
+	end
+	
+	int get_var_at_ip(int ip, int from_idx)
+			check_stack_size();
+		class debug_info_var var;
+		for(int i = from_idx; i < n_vars; i++)
+			
+			//if(!(vars[i].lbl_from > ip) & !(vars[i].lbl_to < ip)) // need >= and <= /// bug: array[i].member doesn't work (actually any obj.member)
+			//class debug_info_var var = vars[i]; /// bug: var_4, declared inside a for-loop, is missing a "symbol X" declaration in iR
+			//if(!(var.lbl_from > ip) & !(var.lbl_to < ip)) // bug, can't access var.member from another class
+			//	return i;
+			//end
+			var = vars[i];
+			int res = get_var_at_ip_helper(ip, var);
+			if(res != -1) return i; end
+		end
+		return -1;
+	end
+end
+
+class debug_info_func_db
+	class debug_info_func funcs[300];
+	int n_funcs = 0;
+	
+	// this whole constructor breaks all the shit
+	/*
+	int constructor()
+		writePort(4, 1);
+		n_funcs = 0;
+		for(int i = 0; i < 1000; i++)
+			//funcs[i].record_len = 0;
+			class debug_info_func *p = (class debug_info_func*)(&funcs + i);
+			p.record_len = 0;
+			//funcs[i].ir_name = "<ERROR>";
+			p.ir_name = "<ERROR>";
+			// this seems broken? array base is dereferenced before indexing, it shouldn't be.
+			  //COMMENT SOURCE "funcs[i].ir_name = "<ERROR>";" // semantic_analyze.c:1014 
+			  //ADD temp_1283 this_49 funcs    this.id [funcs]  // semantic_expr_op.c:286
+			  //    out(L <- P): *temp_1283 from temp_1283 (rename_star) //auth: to expr_index array (arr[]) from expr_id 
+			  //    global id [i]  // semantic_expr_op.c:286
+			  //    out(R <- L): i_15 from i_15 (pass) //auth: to expr_index index ([idx]) from expr_id 
+			  //ADD temp_1284 *temp_1283 i_15 // semantic_expr_op.c:463
+			  //    out(P <- P): temp_1284 from temp_1284 (pass) //auth: to expr_dot object(o.) from expr_index 
+			  //ADD temp_1285 temp_1284 ir_name    this.id [ir_name]  // semantic_expr_op.c:286
+  
+		end
+		writePort(4, 2);
+	end
+	*/
+	//
+	
+	void deserialize(int *p)
+		check_stack_size();
+		err_printf(999, "func_db: p = %d, n_funcs = %d\n", p, *p);
+		n_funcs = *p++;
+		class debug_info_func func;
+		err_printf(999, "func_db 1, n_funcs = %d\n", n_funcs);
+		int test = 0;
+		for(int j = 0; j == 0; j++)
+			err_printf(999, "func_db 2, j = %d\n, n_funcs = %d\n", j, n_funcs);
+		end
+		for(int i = 0; i < n_funcs; i++)
+			err_printf(999, "func_db[%d]\n", i);
+			test++;
+			func.deserialize(p);
+			funcs[i] = func;
+			p = p+func.record_len;
+		end
+		err_printf(999, "func_db test = %d\n", test);
+	end
+	
+	int get_func_at_ip(int ip)
+		for(int i = 0; i < n_funcs; i++)
+			check_stack_size();
+			//if(!(funcs[i].lbl_entrance > ip) & !(funcs[i].lbl_exit < ip))	
+			int x = funcs[i].lbl_entrance;
+			int y = funcs[i].lbl_exit;
+			if(ip == 0) error("get_func_at_ip: input ip = 0\n"); end
+			if(x == 0) error("get_func_at_ip: lbl_entrance = 0\n"); end
+			if(y == 0) error("get_func_at_ip: lbl_exit = 0\n"); end
+			if((ip >= x) & (ip <= y))//should be same as if(!(x > ip) & !(y < ip))
+				return i;
+			end
+		end
+		return -1;
+	end
+end
+
+
+class debug_info_func_db func_db;
+class debug_info_var_db var_db;

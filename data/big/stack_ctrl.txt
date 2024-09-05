@@ -1,0 +1,59 @@
+/// functions to control the zCPU stack w/ hardware underflow/overflow protection
+/// NOTE: does not yet work because LazyComp needs to generate segment-aware access code [todo 72]
+
+void check_stack_size()
+	int end_of_code = 0;
+	int esp;
+	// either asm with two arguments, or if's, are fucked
+	
+	//asm( "mov $S[end_of_code], data_segment_static_end\nmov $S[esp], esp");
+	
+	asm( "mov $S[end_of_code], data_segment_static_end");
+	asm( "mov $S[esp], esp");
+	err_printf(999, "esp %d, eoc %d\n", esp, end_of_code);
+	if((esp-100) < end_of_code) // a bit of a margin so printf works
+	//int x = esp - 100;
+	//if(x < end_of_code) /// are if's just completely fucked?
+		err_printf(900, "Stack overflow\nesp %d\nend_of_code %d\n", esp, end_of_code);
+		infloop();
+	end
+end
+
+void test_stack_overflow()
+	int esp;
+	int arr[100];
+	check_stack_size();
+	asm("mov $S[esp], esp");
+	err_printf(999, "test overflow: esp %d\n", esp);
+	test_stack_overflow();
+end
+
+int ss_size = 0;
+int ss_stack_top = 0;
+int ss_stack_btm = 0;
+int ss_esp = 0;
+int ss_ebp = 0;
+int ss_ret_ip = 0;
+
+void set_stack(int new_stack_btm, int new_stack_top, int new_esp, int new_ebp)
+	ss_stack_top = new_stack_top;
+	ss_stack_btm = new_stack_btm;
+	ss_esp = new_esp;
+	ss_ebp = new_ebp;
+	ss_size = new_stack_top - new_stack_btm;
+	err_printf(999, "set_stack, btm = %d, top = %d, size = %d, new_esp = %d, new_ebp = %d\n",
+		new_stack_btm, new_stack_top, ss_size, new_esp, new_ebp);
+	
+	asm("mov $S[ss_ret_ip], EBP:#1"); // save return ip
+	asm("mov SS, $R[ss_stack_btm]"); // set stack size
+	asm("mov ESP, $R[ss_esp]");		 // set stack pointer (should be ~= size)
+	asm("cpuset 9, $R[ss_size]");	 // set stack zero
+	asm("mov EBP, $R[ss_ebp]");		 // set frame base pointer
+	asm("jmp $R[ss_ret_ip]");		 // simulate return
+end
+
+int get_end_of_code()
+	int eoc = 0;
+	asm("mov $S[eoc], __programsize__");
+	return eoc;
+end

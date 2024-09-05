@@ -1,0 +1,32 @@
+void infloop() while(1) end end
+
+int *adr_port = 65536;
+
+void writePort(int port, int val)
+	*(adr_port+port) = val;
+end
+
+void resetPorts()
+	writePort(0, 9999);
+	writePort(1, 9999);
+	writePort(2, 9999);
+	writePort(3, 9999);
+	writePort(4, 9999);
+	writePort(5, 9999);
+	writePort(6, 9999);
+	writePort(7, 9999);
+end
+
+void setup()
+	//screen_set(65536+100);
+	//screen_clear();
+	//libprints_init();
+	resetPorts();
+end
+
+void crash()
+	int x = 1;
+	x = x/0;
+end
+
+void delay(float n) n = n * 10000; for(int i = 0; i < n; i++) end end

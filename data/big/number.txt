@@ -1,0 +1,113 @@
+#include "data_in/big/string.txt"
+
+//returns the (floored) log10 of a number, i.e. number of digits in floor(num).
+//assumes num is positive
+int ilog10(float num)
+	for(int i = 0; i < 10; i++)
+		if(num < 10) return i; end
+		num = num / 10;
+	end
+end
+
+//returns 10^num
+int ipow10(int num)
+	int x = 1;
+	for(int i = 0; i < num; i++)
+		x = x*10;
+	end
+	return x;
+end
+
+int numDigits(float num) return ilog10(num)+1; end
+
+int getNdigit(float num, int dig)
+	//1. remove the lower parts
+	num = num / ipow10(dig);
+	//2. get the lowest remaining digit
+	num = num % 10;
+	return num;
+end
+
+int floor(float num)
+	int res = 0;
+	int n = numDigits(num);
+	for(int i = 0; i < n; i++)
+		int d = getNdigit(num, i);
+		res = res + d * ipow10(i);
+	end
+	return res;
+end
+
+int floorPrec(float num, int prec)
+	//printf("floorPrec(%d):\n", num);
+	int k = ipow10(prec); 	//printf(" ipow10(%d) = %d\n", prec, k);
+	num = num * k; 			//printf(" num*k = %d\n", num);
+	num = floor(num);		//printf(" floor(num) = %d\n", num);
+	num = num / k;			//printf(" num/k = %d\n", num);
+	return num;
+end
+
+float frac(float num)
+	int isNeg = (num < 0);
+	if(isNeg) num = -num; end
+	float f = num - floor(num);
+	if(isNeg) f = -f; end
+	return f;
+end
+
+
+
+void int2str(int num, char *buff)
+	char *buffInit = buff;
+//	if(num == 0)
+//		buff[0] = '0';//*buff++ = '0';
+//		buff++;
+//		buff[0] = 1;//*buff = 0;
+//	end
+	int isNeg = 0;
+	if(num < 0) isNeg = 1; num = -num; end
+	int End = 0;
+	while(End==0)
+		int d = num % 10;	
+		buff[0] = '0'+d;
+		buff++;
+		num = num / 10;
+		
+		if(num<1) //if(num == 0)
+			if(isNeg) buff[0] = '-'; buff++; end
+			buff[0] = 0;
+			End = 1;
+		end
+	end
+	string_reverse(buffInit);
+end
+
+
+
+
+void float2str(float num, int prec, char *buff)
+	char *buffInit = buff;
+	int isNeg = (num < 0);
+	if(isNeg) num = -num; end
+	int num_fl = floor(num);
+	float num_fr = frac(num);
+	float num_frpr = floorPrec(num_fr, prec);
+	//printf("float2str(%d, %d):\n",num, prec);
+	//printf("  num_fl = %d\n", num_fl);
+	//printf("  num_fr*1000 = %d\n", num_fr*1000);
+	//printf("  num_frpr*1000 = %d\n", num_frpr*1000);
+	//if(isNeg) *buff++ = '-'; end
+	if(isNeg) buff[0] = '-'; buff++; end
+	int2str(num_fl, buff);
+	buff = buff + strlen(buff);
+	//if(num_fr)
+		//*buff++ = '.';
+		buff[0] = '.';
+		buff++;
+		int k = ipow10(prec);
+		float num_final = floor(num_frpr*k);
+		//printf("  num_final = %d\n", num_final);
+		int2str(num_final, buff);
+		strPadBegin(buff, prec, '0');
+	//end
+end
