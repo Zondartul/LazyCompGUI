@@ -5,10 +5,12 @@
 
 [sub_resource type="SystemFont" id="SystemFont_bo6mj"]
 font_names = PackedStringArray("Courier New")
+subpixel_positioning = 0
 
 [sub_resource type="SystemFont" id="SystemFont_nwxbh"]
 fallbacks = Array[Font]([SubResource("SystemFont_bo6mj")])
 font_names = PackedStringArray("Monospace")
+subpixel_positioning = 0
 
 [node name="new_file" type="Control"]
 layout_mode = 3

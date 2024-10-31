@@ -1,6 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://d1khpturliecs"]
+[gd_scene load_steps=7 format=3 uid="uid://d1khpturliecs"]
 
+[ext_resource type="Script" path="res://res/ui/main.gd" id="1_0hsir"]
 [ext_resource type="Script" path="res://res/ui/editor.gd" id="1_1wr4k"]
+[ext_resource type="Script" path="res://res/ui/main_menu_bar.gd" id="2_5papu"]
+[ext_resource type="Script" path="res://res/todo.gd" id="4_mf5mw"]
+[ext_resource type="Script" path="res://res/ui/tokens.gd" id="4_ulho1"]
+[ext_resource type="Script" path="res://res/logic/file_manager.gd" id="5_1f27c"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -9,22 +14,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_0hsir")
 
-[node name="TabContainer" type="TabContainer" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-current_tab = 0
-
-[node name="Editor" type="Control" parent="TabContainer"]
-layout_mode = 2
-script = ExtResource("1_1wr4k")
-metadata/_tab_index = 0
-
-[node name="V" type="VBoxContainer" parent="TabContainer/Editor"]
+[node name="V" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -32,10 +24,11 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MenuBar" type="MenuBar" parent="TabContainer/Editor/V"]
+[node name="MenuBar" type="MenuBar" parent="V"]
 layout_mode = 2
+script = ExtResource("2_5papu")
 
-[node name="File" type="PopupMenu" parent="TabContainer/Editor/V/MenuBar"]
+[node name="File" type="PopupMenu" parent="V/MenuBar"]
 item_count = 4
 item_0/text = "New"
 item_1/text = "Open..."
@@ -45,62 +38,98 @@ item_2/id = 2
 item_3/text = "Save As..."
 item_3/id = 3
 
-[node name="tabs" type="TabContainer" parent="TabContainer/Editor/V"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="fd_open_file" type="FileDialog" parent="TabContainer/Editor"]
+[node name="fd_open_file" type="FileDialog" parent="V/MenuBar/File"]
 title = "Open a File"
 initial_position = 2
 size = Vector2i(500, 400)
 ok_button_text = "Open"
 file_mode = 0
+access = 2
 
-[node name="fd_save_file" type="FileDialog" parent="TabContainer/Editor"]
+[node name="fd_save_file" type="FileDialog" parent="V/MenuBar/File"]
 auto_translate_mode = 1
 initial_position = 2
 size = Vector2i(500, 400)
 ok_button_text = "Save"
+access = 2
 
-[node name="Preproc" type="Control" parent="TabContainer"]
+[node name="TabContainer" type="TabContainer" parent="V"]
+layout_mode = 2
+size_flags_vertical = 3
+current_tab = 2
+
+[node name="Editor" type="Control" parent="V/TabContainer"]
+visible = false
+layout_mode = 2
+script = ExtResource("1_1wr4k")
+metadata/_tab_index = 0
+
+[node name="V" type="VBoxContainer" parent="V/TabContainer/Editor"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="tabs" type="TabContainer" parent="V/TabContainer/Editor/V"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Preproc" type="Control" parent="V/TabContainer"]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
-[node name="Tokenize" type="Control" parent="TabContainer"]
-visible = false
+[node name="Tokens" type="Control" parent="V/TabContainer"]
 layout_mode = 2
+script = ExtResource("4_ulho1")
 metadata/_tab_index = 2
 
-[node name="Parse (AST)" type="Control" parent="TabContainer"]
+[node name="Text" type="RichTextLabel" parent="V/TabContainer/Tokens"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Parse (AST)" type="Control" parent="V/TabContainer"]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 3
 
-[node name="Semantic" type="Control" parent="TabContainer"]
+[node name="Semantic" type="Control" parent="V/TabContainer"]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 4
 
-[node name="IR" type="Control" parent="TabContainer"]
+[node name="IR" type="Control" parent="V/TabContainer"]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 5
 
-[node name="Codegen" type="Control" parent="TabContainer"]
+[node name="Codegen" type="Control" parent="V/TabContainer"]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 6
 
-[node name="Asm" type="Control" parent="TabContainer"]
+[node name="Asm" type="Control" parent="V/TabContainer"]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 7
 
-[node name="Exec" type="Control" parent="TabContainer"]
+[node name="Exec" type="Control" parent="V/TabContainer"]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 8
 
-[connection signal="index_pressed" from="TabContainer/Editor/V/MenuBar/File" to="TabContainer/Editor" method="_on_file_index_pressed"]
-[connection signal="file_selected" from="TabContainer/Editor/fd_open_file" to="TabContainer/Editor" method="_on_fd_open_file_file_selected"]
+[node name="todo" type="Node" parent="."]
+script = ExtResource("4_mf5mw")
+
+[node name="logic" type="Node" parent="."]
+
+[node name="file_manager" type="Node" parent="logic"]
+script = ExtResource("5_1f27c")
+
+[connection signal="meta_hover_started" from="V/TabContainer/Tokens/Text" to="V/TabContainer/Tokens" method="_on_text_meta_hover_started"]
