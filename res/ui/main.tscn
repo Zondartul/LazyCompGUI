@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://d1khpturliecs"]
+[gd_scene load_steps=8 format=3 uid="uid://d1khpturliecs"]
 
 [ext_resource type="Script" path="res://res/ui/main.gd" id="1_0hsir"]
 [ext_resource type="Script" path="res://res/ui/editor.gd" id="1_1wr4k"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://res/todo.gd" id="4_mf5mw"]
 [ext_resource type="Script" path="res://res/ui/tokens.gd" id="4_ulho1"]
 [ext_resource type="Script" path="res://res/logic/file_manager.gd" id="5_1f27c"]
+[ext_resource type="Script" path="res://res/ui/parse.gd" id="5_ban5p"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -56,7 +57,7 @@ access = 2
 [node name="TabContainer" type="TabContainer" parent="V"]
 layout_mode = 2
 size_flags_vertical = 3
-current_tab = 2
+current_tab = 3
 
 [node name="Editor" type="Control" parent="V/TabContainer"]
 visible = false
@@ -82,6 +83,7 @@ layout_mode = 2
 metadata/_tab_index = 1
 
 [node name="Tokens" type="Control" parent="V/TabContainer"]
+visible = false
 layout_mode = 2
 script = ExtResource("4_ulho1")
 metadata/_tab_index = 2
@@ -95,9 +97,18 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Parse (AST)" type="Control" parent="V/TabContainer"]
-visible = false
 layout_mode = 2
+script = ExtResource("5_ban5p")
 metadata/_tab_index = 3
+
+[node name="Graph" type="GraphEdit" parent="V/TabContainer/Parse (AST)"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+scroll_offset = Vector2(-40, -40)
 
 [node name="Semantic" type="Control" parent="V/TabContainer"]
 visible = false
