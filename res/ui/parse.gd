@@ -48,11 +48,25 @@ func _make_node(ni:NodeInfo):
 		btn.pressed.connect(_on_node_selected.bind(node));
 	return node;
 
+func decompress_tok_pos(pos_idx, dict:Dictionary):
+	var pos = dict.positions[pos_idx];
+	var res = {"char_idx":pos.p,
+		"col":pos.c,
+		"line":pos.l,
+		"filename":dict.filenames[pos.f]};
+	return res;
+
+func decompress_token(tok:Dictionary, dict:Dictionary):
+	var res = tok.duplicate();
+	res.pos1 = decompress_tok_pos(tok.pos1, dict);
+	res.pos2 = decompress_tok_pos(tok.pos2, dict);
+	return res;
+
 var max_ast_nodes = 0;
 
-func _ast_to_nodeinfo(ast, parent):
+func _ast_to_nodeinfo(ast, parent, dict):
 	var ni = NodeInfo.new();
-	ni.tok = ast.tok;
+	ni.tok = decompress_token(ast.tok, dict);
 	ni.ni_parent = parent;
 	ni.node_tok = null;
 	ni.is_node_tok_open = false;
@@ -60,7 +74,7 @@ func _ast_to_nodeinfo(ast, parent):
 	if(ast.children):
 		ni.ni_children = [];
 		for ch in ast.children:
-			ni.ni_children.append(_ast_to_nodeinfo(ch,ni));
+			ni.ni_children.append(_ast_to_nodeinfo(ch,ni,dict));
 	return ni;
 
 func _instance_ni(ni:NodeInfo, pos:Vector2):
@@ -89,6 +103,8 @@ func _deinstance_ni(ni:NodeInfo):
 func _clear_graph():
 	## WARNING: removing all children of a GraphEdit causes a crash
 	#for ch in Graph.get_children(): ch.queue_free();
+	nodeinfos = {};
+	ni_root = null;
 	Graph.clear_connections();
 	for ch in Graph.get_children():
 		if ch is GraphNode:
@@ -98,7 +114,7 @@ func _clear_graph():
 func _on_open_json(json:Dictionary):
 	assert(json["file_type"] == "ast");
 	_clear_graph();
-	ni_root = _ast_to_nodeinfo(json["data"],null);
+	ni_root = _ast_to_nodeinfo(json["data"],null,json["dict"]);
 	_instance_ni(ni_root,Vector2(0,0));
 	pass
 
