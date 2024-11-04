@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 type_FileHandle="*res://res/logic/file_handle.gd"
 G="*res://res/logic/globals.gd"
+TokenUtils="*res://res/logic/token_utils.gd"
 
 [rendering]
 

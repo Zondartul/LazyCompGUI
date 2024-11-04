@@ -36,9 +36,11 @@ func _ready() -> void:
 	main_menu.file_open.connect(file_manager._open_file);
 	main_menu.file_new.connect(file_manager._new_file);
 	file_manager.extension_dispatch.connect(_on_extension_dispatch);
+	view_editor.source_text_changed.connect(view_tokens._on_src_changed);
+	view_editor.source_text_changed.connect(view_parse._on_src_changed);
+	
 	
 	view_editor._on_file_new(file_manager._new_file());
-	
 	pass # Replace with function body.
 
 

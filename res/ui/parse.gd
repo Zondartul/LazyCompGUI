@@ -4,7 +4,9 @@ extends Control
 
 var nodeinfos = {};
 var ni_root;
-const ch_step = Vector2(0,80);
+const ch_step = Vector2(0,120);
+const scene_node_ast_graph = preload("res://res/ui/node_ast_graph.tscn")
+var source_text;
 
 class NodeInfo:
 	var tok:Dictionary;
@@ -17,8 +19,14 @@ func _ready() -> void:
 	OS.low_processor_usage_mode = true;
 	#Graph.node_selected.connect(_on_node_selected);
 	
+func _lookup_src_text(pos1:Dictionary, pos2:Dictionary):
+	return TokenUtils.get_source_text(source_text, pos1, pos2)[0];
+	
+func _on_src_changed(txt:String):
+	source_text = txt;
+	
 func _make_node(ni:NodeInfo):
-	var node = GraphNode.new();
+	var node = scene_node_ast_graph.instantiate(); #GraphNode.new();
 	
 	# slots
 	node.set_slot(0,true,0,Color.WHITE,false,0,Color.WHITE)
@@ -27,46 +35,51 @@ func _make_node(ni:NodeInfo):
 			node.add_child(Control.new())
 			node.set_slot(1+i,false,0,Color.WHITE,true,0,Color.WHITE);
 		
+	node.title = str(ni.tok.type);
+	#var lbl1 = node.find_child("lbl_text");
+	#lbl1.text = str(ni.tok.type);
+	var rtl2 = node.find_child("rtl_src");
+	if(ni.tok.text.length() != 0): rtl2.append_text("[color=yellow]%s[/color]\n" % str(ni.tok.text));
+	rtl2.append_text("[color=dark gray]pos1: %d, pos2: %d[/color]\n" % [ni.tok.pos1.char_idx, ni.tok.pos2.char_idx]);
+	rtl2.add_text(_lookup_src_text(ni.tok.pos1, ni.tok.pos2));
 	# VBox to hold everything
-	var Vbox = VBoxContainer.new()
-	node.add_child(Vbox);
-	Vbox.size = node.size;
-	
+	#var Vbox = VBoxContainer.new()
+	#node.add_child(Vbox);
+	#Vbox.size = node.size;
+	#Vbox.anchor_bottom = ANCHOR_END;
+	#Vbox.anchor_top = ANCHOR_BEGIN;
+	#Vbox.anchor_left = ANCHOR_BEGIN;
+	#Vbox.anchor_right = ANCHOR_END;
 	# title and body text
-	node.title = str(ni.tok.text);
-	var lbl = Label.new();
-	lbl.text = str(ni.tok.type);
-	Vbox.add_child(lbl);
+	#node.title = str(ni.tok.text);
+	#var lbl = Label.new();
+	#lbl.text = str(ni.tok.type);
+	#Vbox.add_child(lbl);
+		
+	# source text
+	#var lbl2 = Label.new();
+	#lbl2.text = _lookup_src_text(ni.tok.pos1, ni.tok.pos2);
+	#Vbox.add_child(lbl2);
 		
 	# button for more children
+	var btn = node.find_child("btn_children"); #Button.new();
 	if(ni.ni_children):
-		var btn = Button.new();
-		btn.text = "%d children" % ni.ni_children.size()
-		btn.size_flags_horizontal = Control.SIZE_EXPAND;
-		btn.size_flags_vertical = Control.SIZE_EXPAND;
-		Vbox.add_child(btn);
+		btn.text = "%d >" % ni.ni_children.size()
+		#btn.size_flags_horizontal = Control.SIZE_EXPAND;
+		#btn.size_flags_vertical = Control.SIZE_EXPAND;
+		#Vbox.add_child(btn);
 		btn.pressed.connect(_on_node_selected.bind(node));
+	else:
+		btn.hide();
 	return node;
 
-func decompress_tok_pos(pos_idx, dict:Dictionary):
-	var pos = dict.positions[pos_idx];
-	var res = {"char_idx":pos.p,
-		"col":pos.c,
-		"line":pos.l,
-		"filename":dict.filenames[pos.f]};
-	return res;
 
-func decompress_token(tok:Dictionary, dict:Dictionary):
-	var res = tok.duplicate();
-	res.pos1 = decompress_tok_pos(tok.pos1, dict);
-	res.pos2 = decompress_tok_pos(tok.pos2, dict);
-	return res;
 
 var max_ast_nodes = 0;
 
 func _ast_to_nodeinfo(ast, parent, dict):
 	var ni = NodeInfo.new();
-	ni.tok = decompress_token(ast.tok, dict);
+	ni.tok = TokenUtils.decompress_token(ast.tok, dict);
 	ni.ni_parent = parent;
 	ni.node_tok = null;
 	ni.is_node_tok_open = false;
@@ -127,30 +140,46 @@ func _on_node_selected(node):
 func _move_neighbors_down(ni:NodeInfo): _move_neighbors(ni,true)
 func _move_neighbors_up(ni:NodeInfo): _move_neighbors(ni,false);
 func _move_neighbors(ni:NodeInfo, down:bool):
-	var step = ch_step;
-	if not down: step.y = -step.y;
 	# move everything below this node down by ch_pos
 	var node = ni.node_tok;
+	
+	#var step = ch_step;
+	#if not down: step.y = -step.y;
+	#var offset = step*ni.ni_children.size();
+	var offset = Vector2(0,node.size.y);
+	if not down: offset.y = -offset.y;
+	
 	for node_i in nodeinfos.keys():
 		var ni2 = nodeinfos[node_i]
 		if(ni2.node_tok):
 			var node2 = ni2.node_tok;
 			if(node2.position_offset.y > node.position_offset.y):
-				node2.position_offset += step*ni.ni_children.size();
+				node2.position_offset += offset;
+	
+func _graphnode_get_corners(node):
+	var np:Vector2 = node.position_offset;
+	var ns:Vector2 = node.size;
+	var c_nw = Vector2(np.x, np.y);
+	var c_ne = Vector2(np.x + ns.x, np.y);
+	var c_sw = Vector2(np.x, np.y+ns.y);
+	var c_se = Vector2(np.x + ns.x, np.y+ns.y);
+	return {"nw":c_nw, "ne":c_ne, "sw":c_sw, "se":c_se};
 	
 func _open_ni(ni:NodeInfo):
 	if(ni.ni_children == null): return;
 	assert(ni.is_node_tok_open == false);
 	ni.is_node_tok_open = true;
-	var ch_offset = Vector2(300,80);
-	var ch_pos = ni.node_tok.position_offset;
-	
+	var corner = _graphnode_get_corners(ni.node_tok).ne;
+	var ch_offset = corner + Vector2(32,0);
+	var ch_pos = Vector2(0,0);
 	_move_neighbors_down(ni);
 
 	var node_pr = ni.node_tok;
 	var idx = 0;
 	for ni_ch in ni.ni_children:
-		_instance_ni(ni_ch, ch_offset + ch_pos);
+		var ch_node = _instance_ni(ni_ch, ch_offset + ch_pos);
+		#var ch_corner = _graphnode_get_corners(ch_node).sw;
+		ch_pos.y += ch_node.size.y;#(ch_corner - ch_offset);
 		var node_ch = ni_ch.node_tok;
 		Graph.connect_node(node_pr.name,idx,node_ch.name,0);
 		idx += 1;

@@ -57,7 +57,7 @@ access = 2
 [node name="TabContainer" type="TabContainer" parent="V"]
 layout_mode = 2
 size_flags_vertical = 3
-current_tab = 3
+current_tab = 2
 
 [node name="Editor" type="Control" parent="V/TabContainer"]
 visible = false
@@ -83,12 +83,11 @@ layout_mode = 2
 metadata/_tab_index = 1
 
 [node name="Tokens" type="Control" parent="V/TabContainer"]
-visible = false
 layout_mode = 2
 script = ExtResource("4_ulho1")
 metadata/_tab_index = 2
 
-[node name="Text" type="RichTextLabel" parent="V/TabContainer/Tokens"]
+[node name="H" type="HBoxContainer" parent="V/TabContainer/Tokens"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -96,7 +95,31 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="Text" type="RichTextLabel" parent="V/TabContainer/Tokens/H"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="V" type="VBoxContainer" parent="V/TabContainer/Tokens/H"]
+layout_mode = 2
+
+[node name="cb_tooltip" type="CheckButton" parent="V/TabContainer/Tokens/H/V"]
+layout_mode = 2
+text = "tooltip"
+
+[node name="p_tooltip" type="PanelContainer" parent="V/TabContainer/Tokens"]
+visible = false
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="lbl" type="RichTextLabel" parent="V/TabContainer/Tokens/p_tooltip"]
+layout_mode = 2
+text = "Blah blah tooltip text"
+fit_content = true
+autowrap_mode = 0
+
 [node name="Parse (AST)" type="Control" parent="V/TabContainer"]
+visible = false
 layout_mode = 2
 script = ExtResource("5_ban5p")
 metadata/_tab_index = 3
@@ -108,7 +131,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-scroll_offset = Vector2(0, -31)
+scroll_offset = Vector2(0, -66)
 
 [node name="Semantic" type="Control" parent="V/TabContainer"]
 visible = false
@@ -143,4 +166,4 @@ script = ExtResource("4_mf5mw")
 [node name="file_manager" type="Node" parent="logic"]
 script = ExtResource("5_1f27c")
 
-[connection signal="meta_hover_started" from="V/TabContainer/Tokens/Text" to="V/TabContainer/Tokens" method="_on_text_meta_hover_started"]
+[connection signal="meta_hover_started" from="V/TabContainer/Tokens/H/Text" to="V/TabContainer/Tokens" method="_on_text_meta_hover_started"]

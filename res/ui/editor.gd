@@ -2,6 +2,7 @@ extends Control
 
 const scene_file_panel = preload("res://res/ui/editor_file_panel.tscn")
 @onready var tabs = $V/tabs
+signal source_text_changed(text);
 
 var files = [];
 
@@ -28,4 +29,8 @@ func _on_file_open(file:FileHandle) -> void:
 	_add_file_tab(file);
 	files.append(file);
 	file.panel.reload();
+	# signal source text
+	var S = file.fd.get_as_text();
+	assert(S is String)
+	source_text_changed.emit(S);
 	
