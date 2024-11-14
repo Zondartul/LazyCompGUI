@@ -20,8 +20,11 @@ func _ready() -> void:
 	#Graph.node_selected.connect(_on_node_selected);
 	
 func _lookup_src_text(pos1:Dictionary, pos2:Dictionary):
-	return TokenUtils.get_source_text(source_text, pos1, pos2)[0];
-	
+	if(source_text):
+		return TokenUtils.get_source_text(source_text, pos1, pos2)[0];
+	else:
+		return "(no src)";
+
 func _on_src_changed(txt:String):
 	source_text = txt;
 	
